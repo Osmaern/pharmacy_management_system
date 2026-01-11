@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>Confirm Sales Reset</h2>
+
+  <div class="alert alert-warning">
+    <strong>Warning:</strong> This action will permanently delete sales data. This cannot be undone.
+  </div>
+
+  <p>You are about to reset sales for the <strong>{{ period }}</strong> period.</p>
+
+  <p><strong>Details:</strong></p>
+  <ul>
+    <li>Period: {{ period }}</li>
+    <li>Sales to be deleted: {{ sales_count }} records</li>
+    <li>Total value of sales to be deleted: ${{ '%.2f'|format(total_value) }}</li>
+    <li>Cutoff date: {{ cutoff_date }}</li>
+  </ul>
+
+  <form action="{{ url_for('reset_sales') }}" method="post">
+    {{ csrf_token() }}
+    <input type="hidden" name="period" value="{{ period }}">
+    <button type="submit" class="btn btn-danger">Confirm Reset</button>
+    <a href="{{ url_for('reports') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+
+{% endblock %}

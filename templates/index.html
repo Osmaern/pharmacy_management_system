@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2 text-center">
+      <h1>Welcome to Pharmacy Management System</h1>
+      <p>Select your role to begin:</p>
+      <div class="d-flex justify-content-center gap-3">
+        <a class="btn btn-primary" href="/medicines">Admin / Pharmacist - Inventory</a>
+        <a class="btn btn-success" href="/sales/new">Record Sale (Pharmacist)</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

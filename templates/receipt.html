@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="card">
+    <div class="card-body">
+      <h3 class="card-title">Receipt</h3>
+      <p><strong>Sale ID:</strong> {{sale.id}}</p>
+      <p><strong>Date:</strong> {{sale.timestamp}}</p>
+      <p><strong>Medicine:</strong> {{sale.medicine.name}}</p>
+      <p><strong>Quantity:</strong> {{sale.quantity}}</p>
+      <p><strong>Unit Price:</strong> {{'%.2f'|format(sale.price_per_unit)}}</p>
+      <p><strong>Total:</strong> {{'%.2f'|format(sale.total_price)}}</p>
+      {% if sale.customer %}
+        <p><strong>Customer:</strong> {{sale.customer.name}} {{sale.customer.phone and '(' ~ sale.customer.phone ~ ')'}} </p>
+      {% endif %}
+      <a class="btn btn-outline-primary" href="/sales/new">New Sale</a>
+      <a class="btn btn-secondary" onclick="window.print()">Print</a>
+    </div>
+  </div>
+{% endblock %}

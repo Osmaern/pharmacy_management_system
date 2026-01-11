@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Medicines</h2>
+    {% if session.get('is_admin') %}
+      <a class="btn btn-sm btn-primary" href="/medicines/add">Add Medicine</a>
+    {% else %}
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_login') }}">Admin login</a>
+    {% endif %}
+  </div>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Brand</th>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Expiry</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in medicines %}
+      <tr>
+        <td>{{m.name}}</td>
+        <td>{{m.brand or ''}}</td>
+        <td>
+          {% if m.description %}
+            <div class="text-muted small">{{ m.description[:100] }}{% if m.description and m.description|length > 100 %}...{% endif %}</div>
+          {% else %}
+            
+          {% endif %}
+        </td>
+        <td>{{m.category or ''}}</td>
+        <td>{{'%.2f'|format(m.price)}}</td>
+        <td>
+          {% if m.quantity == 0 %}
+            <span class="text-danger">Finish</span>
+          {% else %}
+            {{m.quantity}}
+            {% if m.quantity <= low_stock_threshold %}
+              <span class="badge bg-warning text-dark">Low</span>
+            {% endif %}
+          {% endif %}
+        </td>
+        <td>
+          {% if m.expiry_date %}
+            {{m.expiry_date}}
+            {% if m.expiry_date < today %}
+              <span class="badge bg-danger">Expired</span>
+            {% elif m.near_expiry() %}
+              <span class="badge bg-warning text-dark">Near expiry</span>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        {% if session.get('is_admin') %}
+        <td>
+          <a class="btn btn-sm btn-outline-secondary" href="/medicines/update/{{m.id}}">Edit</a>
+          <form method="post" action="/medicines/delete/{{m.id}}" style="display:inline-block; margin-left:6px;" onsubmit="return confirm('Delete this medicine?');">
+            {{ csrf_token() }}
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </td>
+        {% else %}
+        <td><a class="btn btn-sm btn-outline-secondary" href="{{ url_for('admin_login') }}">Admin login</a></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

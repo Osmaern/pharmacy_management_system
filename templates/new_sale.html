@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>Record New Sale</h2>
+  <form method="post">
+    {{ csrf_token() }}
+    <div class="mb-3">
+      <label class="form-label">Medicine</label>
+      <select name="medicine_id" class="form-select" required>
+        <option value="">-- choose medicine --</option>
+        {% for m in medicines %}
+          <option value="{{m.id}}">{{m.name}} ({{m.quantity}} in stock) - {{'%.2f'|format(m.price)}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Quantity</label>
+      <input name="quantity" type="number" class="form-control" value="1" min="1" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Customer (optional)</label>
+      <select name="customer_id" class="form-select">
+        <option value="">-- none --</option>
+        {% for c in customers %}
+          <option value="{{c.id}}">{{c.name}} {{c.phone and '(' ~ c.phone ~ ')'}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-success">Record Sale</button>
+  </form>
+{% endblock %}
