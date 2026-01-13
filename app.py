@@ -557,8 +557,11 @@ def create_app():
     return app
 
 
+# Create app instance for Gunicorn (Railway/production)
+app = create_app()
+
+
 if __name__ == '__main__':
-    app = create_app()
     # Print all registered endpoints and their URLs for debugging
     with app.app_context():
         print('Registered endpoints:')
