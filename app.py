@@ -558,4 +558,5 @@ if __name__ == '__main__':
         for rule in app.url_map.iter_rules():
             print(f"{rule.endpoint:20} {rule.rule}")
     # Run in debug for development / MVP
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
