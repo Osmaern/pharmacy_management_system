@@ -5,6 +5,7 @@ import secrets
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_limiter.stores import MemoryStore
 
 from models import db, Medicine, Customer, Sale
 from sqlalchemy import func
@@ -43,12 +44,21 @@ def create_app():
     # Make generate_csrf available in all templates
     app.jinja_env.globals['generate_csrf'] = generate_csrf
 
-    # Initialize rate limiter
-    limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
+    # Initialize rate limiter with memory store
+    limiter = Limiter(
+        key_func=get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"
+    )
 
     with app.app_context():
-        # Create tables if they don't exist
-        db.create_all()
+        try:
+            # Create tables if they don't exist
+            db.create_all()
+        except Exception as e:
+            print(f"Warning: Could not create database tables: {e}")
+            # Continue anyway - tables might already exist
 
     # Add context processor to inject current date and time in 12-hour format
     @app.context_processor
