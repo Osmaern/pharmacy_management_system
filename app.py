@@ -13,7 +13,6 @@ from flask import send_file
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'pharmacy.db')
 
 def create_app():
     from models import Admin
@@ -21,7 +20,17 @@ def create_app():
     from functools import wraps
 
     app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+    # Use PostgreSQL on Railway, SQLite locally
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        # Fix PostgreSQL URL scheme for SQLAlchemy
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    else:
+        # Local development with SQLite
+        DB_PATH = os.path.join(BASE_DIR, 'pharmacy.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-for-demo')
 
@@ -38,20 +47,8 @@ def create_app():
     limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "50 per hour"])
 
     with app.app_context():
-        # Create DB file and tables if they don't exist
+        # Create tables if they don't exist
         db.create_all()
-        # Ensure `description` column exists on Medicine (safe-add for existing DB)
-        try:
-            from sqlalchemy import text
-            conn = db.engine.connect()
-            res = conn.execute(text("PRAGMA table_info('medicine')")).fetchall()
-            cols = [r[1] for r in res]
-            if 'description' not in cols:
-                conn.execute(text("ALTER TABLE medicine ADD COLUMN description TEXT"))
-            conn.close()
-        except Exception:
-            # If anything goes wrong, continue without failing app startup
-            pass
 
     # Add context processor to inject current date and time in 12-hour format
     @app.context_processor
