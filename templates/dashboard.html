@@ -136,16 +136,22 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Handle empty data
+  const salesDates = {{ sales_dates | tojson }} || [];
+  const salesAmounts = {{ sales_amounts | tojson }} || [];
+  const stockLabels = {{ stock_labels | tojson }} || [];
+  const stockQuantities = {{ stock_quantities | tojson }} || [];
+  
   // === SALES TREND CHART ===
   const salesCtx = document.getElementById('salesChart');
   if (salesCtx) {
     new Chart(salesCtx, {
       type: 'line',
       data: {
-        labels: {{ sales_dates | tojson }},
+        labels: salesDates,
         datasets: [{
           label: 'Daily Sales ($)',
-          data: {{ sales_amounts | tojson }},
+          data: salesAmounts,
           borderColor: '#0ea5e9',
           backgroundColor: 'rgba(14, 165, 233, 0.08)',
           borderWidth: 3,
@@ -219,10 +225,10 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(stockCtx, {
       type: 'bar',
       data: {
-        labels: {{ stock_labels | tojson }},
+        labels: stockLabels,
         datasets: [{
           label: 'Units in Stock',
-          data: {{ stock_quantities | tojson }},
+          data: stockQuantities,
           backgroundColor: [
             'rgba(14, 165, 233, 0.8)',
             'rgba(16, 185, 129, 0.8)',

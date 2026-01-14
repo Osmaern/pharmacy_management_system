@@ -212,51 +212,64 @@ def create_app():
     @app.route('/dashboard')
     def dashboard():
         """Dashboard with charts and analytics"""
-        # Sales trend data (last 7 days)
-        today = date.today()
-        seven_days_ago = today - timedelta(days=7)
-        sales_by_date = db.session.query(
-            func.date(Sale.timestamp).label('date'),
-            func.sum(Sale.total_price).label('total')
-        ).filter(Sale.timestamp >= seven_days_ago).group_by(func.date(Sale.timestamp)).all()
-        
-        sales_dates = [str(s[0]) for s in sales_by_date]
-        sales_amounts = [float(s[1]) if s[1] else 0 for s in sales_by_date]
-        
-        # Stock levels
-        medicines = Medicine.query.all()
-        stock_labels = [m.name for m in medicines[:10]]  # Top 10
-        stock_quantities = [m.quantity for m in medicines[:10]]
-        
-        # Expiry alerts
-        today = date.today()
-        thirty_days = today + timedelta(days=30)
-        expiring_soon = Medicine.query.filter(
-            Medicine.expiry_date.isnot(None),
-            Medicine.expiry_date <= thirty_days,
-            Medicine.expiry_date > today
-        ).all()
-        
-        expired = Medicine.query.filter(
-            Medicine.expiry_date.isnot(None),
-            Medicine.expiry_date <= today
-        ).all()
-        
-        # Statistics
-        total_medicines = Medicine.query.count()
-        total_stock = db.session.query(func.sum(Medicine.quantity)).scalar() or 0
-        total_sales = db.session.query(func.sum(Sale.total_price)).scalar() or 0
-        
-        return render_template('dashboard.html',
-                             sales_dates=sales_dates,
-                             sales_amounts=sales_amounts,
-                             stock_labels=stock_labels,
-                             stock_quantities=stock_quantities,
-                             expiring_soon=expiring_soon,
-                             expired=expired,
-                             total_medicines=total_medicines,
-                             total_stock=total_stock,
-                             total_sales=total_sales)
+        try:
+            # Sales trend data (last 7 days)
+            today = date.today()
+            seven_days_ago = today - timedelta(days=7)
+            sales_by_date = db.session.query(
+                func.date(Sale.timestamp).label('date'),
+                func.sum(Sale.total_price).label('total')
+            ).filter(Sale.timestamp >= seven_days_ago).group_by(func.date(Sale.timestamp)).all()
+            
+            sales_dates = [str(s[0]) for s in sales_by_date]
+            sales_amounts = [float(s[1]) if s[1] else 0 for s in sales_by_date]
+            
+            # Stock levels
+            medicines = Medicine.query.all()
+            stock_labels = [m.name for m in medicines[:10]]  # Top 10
+            stock_quantities = [m.quantity for m in medicines[:10]]
+            
+            # Expiry alerts
+            today = date.today()
+            thirty_days = today + timedelta(days=30)
+            expiring_soon = Medicine.query.filter(
+                Medicine.expiry_date.isnot(None),
+                Medicine.expiry_date <= thirty_days,
+                Medicine.expiry_date > today
+            ).all()
+            
+            expired = Medicine.query.filter(
+                Medicine.expiry_date.isnot(None),
+                Medicine.expiry_date <= today
+            ).all()
+            
+            # Statistics
+            total_medicines = Medicine.query.count()
+            total_stock = db.session.query(func.sum(Medicine.quantity)).scalar() or 0
+            total_sales = db.session.query(func.sum(Sale.total_price)).scalar() or 0
+            
+            return render_template('dashboard.html',
+                                 sales_dates=sales_dates,
+                                 sales_amounts=sales_amounts,
+                                 stock_labels=stock_labels,
+                                 stock_quantities=stock_quantities,
+                                 expiring_soon=expiring_soon,
+                                 expired=expired,
+                                 total_medicines=total_medicines,
+                                 total_stock=total_stock,
+                                 total_sales=total_sales)
+        except Exception as e:
+            flash(f'Dashboard error: {str(e)}', 'danger')
+            return render_template('dashboard.html',
+                                 sales_dates=[],
+                                 sales_amounts=[],
+                                 stock_labels=[],
+                                 stock_quantities=[],
+                                 expiring_soon=[],
+                                 expired=[],
+                                 total_medicines=0,
+                                 total_stock=0,
+                                 total_sales=0)
 
     # ---------- Medicine Inventory Routes ----------
     @app.route('/medicines')
