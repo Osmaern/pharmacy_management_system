@@ -1,42 +1,40 @@
 // Service Worker for offline functionality
-const CACHE_NAME = 'pharmacy-v2';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'pharmacy-cache-v3';
+const ASSETS_TO_CACHE = [
   '/',
-  '/dashboard',
-  '/medicines',
-  '/customers',
-  '/reports',
-  '/sales/search',
   '/static/animations.css',
   '/static/animations.js',
   '/static/offline-db.js',
   '/static/offline-manager.js',
   '/static/manifest.json',
   '/static/offline.html',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js'
 ];
 
-// Install event - cache essential assets
+// Install - cache core assets
 self.addEventListener('install', (event) => {
+  console.log('[SW] Installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('Service Worker: Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    }).catch((err) => console.log('Service Worker: Install error', err))
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Caching core assets');
+        return cache.addAll(ASSETS_TO_CACHE);
+      })
+      .catch((err) => {
+        console.error('[SW] Cache install error:', err);
+      })
   );
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate - clean old caches
 self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: Deleting old cache', cacheName);
+            console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -46,23 +44,23 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch - serve from cache or network
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
+  // Skip non-GET and non-http(s)
+  if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
     return;
   }
 
-  // For HTML pages: network first, fallback to cache
+  // For HTML requests: network first, fallback to cache
   if (request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
-          if (response.ok) {
+          // Cache successful HTML responses
+          if (response && response.status === 200) {
             const cloneResponse = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(request, cloneResponse);
@@ -71,40 +69,49 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => {
-          // Fallback to cache for HTML
-          return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/static/offline.html');
-          });
+          // Network failed - try cache
+          return caches.match(request)
+            .then((cached) => cached || caches.match('/static/offline.html'));
         })
     );
     return;
   }
 
-  // For static assets: cache first, fallback to network
+  // For other requests: cache first, then network
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(request)
-        .then((response) => {
-          // Cache successful responses
-          if (response.ok && (request.url.includes('static') || request.url.includes('cdn'))) {
-            const cloneResponse = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, cloneResponse);
-            });
+    caches.match(request)
+      .then((cached) => {
+        if (cached) {
+          // Return from cache but fetch fresh in background
+          if (!request.url.includes('/api/')) {
+            fetch(request).then((response) => {
+              if (response && response.status === 200) {
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(request, response.clone());
+                });
+              }
+            }).catch(() => {});
           }
-          return response;
-        })
-        .catch(() => {
-          // Return offline placeholder for failed requests
-          return new Response('Offline - Resource not available', {
-            status: 503,
-            statusText: 'Service Unavailable'
+          return cached;
+        }
+
+        // Not in cache - fetch from network
+        return fetch(request)
+          .then((response) => {
+            // Cache successful responses
+            if (response && response.status === 200) {
+              const cloneResponse = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, cloneResponse);
+              });
+            }
+            return response;
+          })
+          .catch(() => {
+            // Return offline page as fallback
+            return caches.match('/static/offline.html');
           });
-        });
-    })
+      })
   );
 });
 

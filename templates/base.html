@@ -153,9 +153,13 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('{{ url_for("static", filename="service-worker.js") }}')
-          .then(reg => console.log('✓ Service Worker registered'))
-          .catch(err => console.log('Service Worker registration failed:', err));
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+          .then(reg => {
+            console.log('✓ Service Worker registered with scope:', reg.scope);
+            // Force update check
+            reg.update();
+          })
+          .catch(err => console.error('Service Worker registration failed:', err));
       }
     </script>
     

@@ -208,6 +208,11 @@ def create_app():
     def index():
         return render_template('index.html')
 
+    # Serve Service Worker from root for proper scope
+    @app.route('/service-worker.js')
+    def service_worker():
+        return send_file('static/service-worker.js', mimetype='application/javascript', cache_timeout=0)
+
     # ---------- DASHBOARD ROUTE ----------
     @app.route('/dashboard')
     def dashboard():
