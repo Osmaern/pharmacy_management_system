@@ -1,70 +1,1099 @@
 {% extends 'base.html' %}
+
 {% block content %}
-  <h2>Reports</h2>
+<div class="reports-container">
+  <!-- Reports Header -->
+  <div class="reports-header fade-in">
+    <h1>📊 Advanced Reports & Analytics</h1>
+    <p class="text-muted">Comprehensive business insights and performance metrics</p>
+  </div>
 
-  <h4>Daily Sales ({{today}})</h4>
-  <p><strong>Total today:</strong> {{'%.2f'|format(total_daily)}}</p>
-  <table class="table table-sm">
-    <thead><tr><th>ID</th><th>Medicine</th><th>Qty</th><th>Total</th><th>Time</th></tr></thead>
-    <tbody>
-      {% for s in daily_sales %}
-        <tr><td>{{s.id}}</td><td>{{s.medicine.name}}</td><td>{{s.quantity}}</td><td>{{'%.2f'|format(s.total_price)}}</td><td>{{s.timestamp}}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <!-- Tabs Navigation -->
+  <ul class="nav nav-tabs nav-reports" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sales-tab">💹 Sales Analysis</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bestsellers-tab">⭐ Best Sellers</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#expiry-tab">⏰ Expiry Report</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profitloss-tab">💰 Profit & Loss</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#stock-tab">📦 Stock Report</button>
+    </li>
+  </ul>
 
-  <h4>All-time Sales Summary</h4>
-  <p><strong>Total all time:</strong> {{'%.2f'|format(total_all)}}</p>
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- ===== SALES ANALYSIS ===== -->
+    <div class="tab-pane fade show active" id="sales-tab">
+      <div class="sales-grid">
+        <!-- Daily Sales Card -->
+        <div class="metric-card scale-in" style="animation-delay: 0.05s">
+          <div class="metric-label">Today's Sales</div>
+          <div class="metric-value">${{ "%.2f"|format(total_daily) }}</div>
+          <div class="metric-count">{{ daily_sales|length }} transactions</div>
+          <div class="metric-chart-mini">
+            <div class="bar" style="height: 40%"></div>
+            <div class="bar" style="height: 60%"></div>
+            <div class="bar" style="height: 35%"></div>
+            <div class="bar" style="height: 70%"></div>
+          </div>
+        </div>
 
-  <h4>Reset Sales Data</h4>
-  <form action="{{ url_for('reset_confirm') }}" method="post">
-    <input type="hidden" name="csrf_token" value="{{ generate_csrf() }}">
-    <div class="mb-3">
-      <label class="form-label">Select Reset Period:</label>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="period" id="daily" value="daily" required>
-        <label class="form-check-label" for="daily">
-          Daily (delete sales older than 24 hours)
-        </label>
+        <!-- Weekly Sales Card -->
+        <div class="metric-card scale-in" style="animation-delay: 0.1s">
+          <div class="metric-label">This Week</div>
+          <div class="metric-value">${{ "%.2f"|format(total_weekly) }}</div>
+          <div class="metric-count">{{ weekly_sales|length }} days</div>
+          <div class="metric-chart-mini">
+            <div class="bar" style="height: 50%"></div>
+            <div class="bar" style="height: 65%"></div>
+            <div class="bar" style="height: 45%"></div>
+            <div class="bar" style="height: 75%"></div>
+            <div class="bar" style="height: 55%"></div>
+          </div>
+        </div>
+
+        <!-- Monthly Sales Card -->
+        <div class="metric-card scale-in" style="animation-delay: 0.15s">
+          <div class="metric-label">This Month</div>
+          <div class="metric-value">${{ "%.2f"|format(total_monthly) }}</div>
+          <div class="metric-count">{{ monthly_sales|length }} days</div>
+          <div class="metric-chart-mini">
+            <div class="bar" style="height: 40%"></div>
+            <div class="bar" style="height: 65%"></div>
+            <div class="bar" style="height: 55%"></div>
+            <div class="bar" style="height: 75%"></div>
+            <div class="bar" style="height: 60%"></div>
+          </div>
+        </div>
+
+        <!-- All-Time Sales Card -->
+        <div class="metric-card scale-in" style="animation-delay: 0.2s">
+          <div class="metric-label">All-Time Total</div>
+          <div class="metric-value">${{ "%.2f"|format(total_all) }}</div>
+          <div class="metric-count">{{ daily_sales|length }} total transactions</div>
+          <div class="metric-chart-mini">
+            <div class="bar" style="height: 50%"></div>
+            <div class="bar" style="height: 70%"></div>
+            <div class="bar" style="height: 65%"></div>
+            <div class="bar" style="height: 80%"></div>
+          </div>
+        </div>
       </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="period" id="monthly" value="monthly">
-        <label class="form-check-label" for="monthly">
-          Monthly (delete sales older than 30 days)
-        </label>
+
+      <!-- Daily Sales Table -->
+      <div class="report-section fade-in" style="animation-delay: 0.25s">
+        <h3>Today's Transactions ({{ today }})</h3>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Medicine</th>
+                <th>Quantity</th>
+                <th>Price/Unit</th>
+                <th>Total</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if daily_sales %}
+                {% for s in daily_sales %}
+                  <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.02 }}s">
+                    <td>#{{ s.id }}</td>
+                    <td><strong>{{ s.medicine.name }}</strong></td>
+                    <td><span class="badge bg-info">{{ s.quantity }}</span></td>
+                    <td>${{ "%.2f"|format(s.medicine.price) }}</td>
+                    <td><strong>${{ "%.2f"|format(s.total_price) }}</strong></td>
+                    <td>{{ s.timestamp.strftime('%H:%M:%S') }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted">No sales today</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="period" id="half_yearly" value="half_yearly">
-        <label class="form-check-label" for="half_yearly">
-          Half-yearly (delete sales older than 180 days)
-        </label>
+
+      <!-- Weekly Sales Breakdown -->
+      <div class="report-section fade-in" style="animation-delay: 0.3s">
+        <h3>Weekly Sales Breakdown</h3>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Transactions</th>
+                <th>Total Revenue</th>
+                <th>Daily Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if weekly_sales %}
+                {% for w in weekly_sales %}
+                  <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.03 }}s">
+                    <td><strong>{{ w[0] }}</strong></td>
+                    <td><span class="badge bg-primary">{{ w[2] }}</span></td>
+                    <td>${{ "%.2f"|format(w[1] or 0) }}</td>
+                    <td>${{ "%.2f"|format((w[1] or 0) / (w[2] or 1)) }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">No weekly data available</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="form-check">
-        <input class="form-check-input" type="radio" name="period" id="yearly" value="yearly">
-        <label class="form-check-label" for="yearly">
-          Yearly (delete sales older than 365 days)
-        </label>
+
+      <!-- Monthly Sales Breakdown -->
+      <div class="report-section fade-in" style="animation-delay: 0.35s">
+        <h3>Monthly Sales Breakdown (Last 30 Days)</h3>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Transactions</th>
+                <th>Total Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if monthly_sales %}
+                {% for m in monthly_sales %}
+                  <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.02 }}s">
+                    <td><strong>{{ m[0] }}</strong></td>
+                    <td><span class="badge bg-success">{{ m[2] }}</span></td>
+                    <td>${{ "%.2f"|format(m[1] or 0) }}</td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">No monthly data available</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-    <button type="submit" class="btn btn-warning">Proceed to Confirm Reset</button>
-  </form>
 
-  <h4>Stock Report</h4>
-  <table class="table table-striped">
-    <thead><tr><th>Medicine</th><th>Qty</th><th>Expiry</th><th>Notes</th></tr></thead>
-    <tbody>
-      {% for m in medicines %}
-        <tr>
-          <td>{{m.name}}</td>
-          <td>{{m.quantity}}</td>
-          <td>{{m.expiry_date or '—'}}</td>
-          <td>
-            {% if m.quantity <= 5 %}<span class="badge bg-warning text-dark">Low</span>{% endif %}
-            {% if m.expiry_date and m.expiry_date < today %}<span class="badge bg-danger">Expired</span>{% elif m.near_expiry() %}<span class="badge bg-warning text-dark">Near expiry</span>{% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <!-- ===== BEST SELLERS ===== -->
+    <div class="tab-pane fade" id="bestsellers-tab">
+      <div class="report-section fade-in">
+        <h3>🏆 Top 10 Best-Selling Medicines</h3>
+        {% if best_sellers %}
+          <div class="bestsellers-grid">
+            {% for medicine in best_sellers %}
+              <div class="bestseller-card scale-in" style="animation-delay: {{ loop.index0 * 0.05 }}s">
+                <div class="rank">{{ loop.index }}</div>
+                <div class="medicine-name">{{ medicine[1] }}</div>
+                <div class="stats">
+                  <div class="stat-item">
+                    <span class="stat-label">Sold:</span>
+                    <span class="stat-value">{{ medicine[3]|int }} units</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Revenue:</span>
+                    <span class="stat-value">${{ "%.2f"|format(medicine[4] or 0) }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">Price:</span>
+                    <span class="stat-value">${{ "%.2f"|format(medicine[2]) }}</span>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">No sales data available yet</div>
+        {% endif %}
+      </div>
+    </div>
 
+    <!-- ===== EXPIRY REPORT ===== -->
+    <div class="tab-pane fade" id="expiry-tab">
+      <div class="expiry-grid">
+        <!-- Expired Items -->
+        <div class="expiry-section fade-in" style="animation-delay: 0.05s">
+          <div class="section-header danger">
+            <h3>🚨 Expired Items</h3>
+            <span class="count-badge">{{ expired_items|length }}</span>
+          </div>
+          <div class="items-list">
+            {% if expired_items %}
+              {% for item in expired_items %}
+                <div class="expiry-item expired" style="animation-delay: {{ loop.index0 * 0.03 }}s">
+                  <div class="item-info">
+                    <div class="item-name">{{ item.name }}</div>
+                    <div class="item-details">
+                      <span class="brand">{{ item.brand }}</span>
+                      <span class="quantity">{{ item.quantity }} units</span>
+                    </div>
+                  </div>
+                  <div class="item-date expired">{{ item.expiry_date.strftime('%b %d, %Y') }}</div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted text-center">✓ No expired items</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Expiring Soon Items -->
+        <div class="expiry-section fade-in" style="animation-delay: 0.1s">
+          <div class="section-header warning">
+            <h3>⏰ Expiring Soon (30 Days)</h3>
+            <span class="count-badge">{{ expiring_soon|length }}</span>
+          </div>
+          <div class="items-list">
+            {% if expiring_soon %}
+              {% for item in expiring_soon %}
+                <div class="expiry-item warning" style="animation-delay: {{ loop.index0 * 0.03 }}s">
+                  <div class="item-info">
+                    <div class="item-name">{{ item.name }}</div>
+                    <div class="item-details">
+                      <span class="brand">{{ item.brand }}</span>
+                      <span class="quantity">{{ item.quantity }} units</span>
+                    </div>
+                  </div>
+                  <div class="item-date warning">{{ item.expiry_date.strftime('%b %d, %Y') }}</div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <p class="text-muted text-center">✓ No items expiring soon</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PROFIT & LOSS ===== -->
+    <div class="tab-pane fade" id="profitloss-tab">
+      <div class="profitloss-container fade-in">
+        <div class="profitloss-metrics">
+          <div class="metric-box revenue">
+            <div class="metric-icon">📈</div>
+            <div class="metric-data">
+              <div class="label">Total Revenue</div>
+              <div class="value">${{ "%.2f"|format(total_revenue) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-box cost">
+            <div class="metric-icon">📦</div>
+            <div class="metric-data">
+              <div class="label">Total Cost</div>
+              <div class="value">${{ "%.2f"|format(total_cost) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-box profit {% if total_profit >= 0 %}positive{% else %}negative{% endif %}">
+            <div class="metric-icon">💰</div>
+            <div class="metric-data">
+              <div class="label">Net Profit</div>
+              <div class="value">{% if total_profit >= 0 %}+{% endif %}${{ "%.2f"|format(total_profit) }}</div>
+            </div>
+          </div>
+
+          <div class="metric-box margin">
+            <div class="metric-icon">📊</div>
+            <div class="metric-data">
+              <div class="label">Profit Margin</div>
+              <div class="value">{{ "%.1f"|format(profit_margin) }}%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profit Breakdown -->
+        <div class="profitloss-table">
+          <h3>Financial Summary</h3>
+          <table class="table">
+            <tbody>
+              <tr>
+                <td><strong>Total Revenue (All Sales)</strong></td>
+                <td class="text-end"><strong>${{ "%.2f"|format(total_revenue) }}</strong></td>
+              </tr>
+              <tr class="cost-row">
+                <td><strong>Total Cost of Goods</strong></td>
+                <td class="text-end"><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
+              </tr>
+              <tr class="separator">
+                <td colspan="2"></td>
+              </tr>
+              <tr class="profit-row {% if total_profit >= 0 %}positive{% else %}negative{% endif %}">
+                <td><strong>Net Profit</strong></td>
+                <td class="text-end"><strong>{% if total_profit >= 0 %}+{% endif %}${{ "%.2f"|format(total_profit) }}</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Profit Margin</strong></td>
+                <td class="text-end"><strong>{{ "%.1f"|format(profit_margin) }}%</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Profit Gauge -->
+        <div class="profit-gauge fade-in" style="animation-delay: 0.15s">
+          <div class="gauge-title">Performance Indicator</div>
+          <div class="gauge-container">
+            <div class="gauge-bar">
+              <div class="gauge-fill {% if profit_margin >= 40 %}excellent{% elif profit_margin >= 25 %}good{% elif profit_margin >= 15 %}fair{% else %}poor{% endif %}" style="width: {{ profit_margin }}%"></div>
+            </div>
+            <div class="gauge-labels">
+              <span>0%</span>
+              <span>50%</span>
+            </div>
+          </div>
+          <div class="gauge-status">
+            {% if profit_margin >= 40 %}
+              <span class="badge bg-success">Excellent Performance</span>
+            {% elif profit_margin >= 25 %}
+              <span class="badge bg-success">Good Performance</span>
+            {% elif profit_margin >= 15 %}
+              <span class="badge bg-warning">Fair Performance</span>
+            {% else %}
+              <span class="badge bg-danger">Needs Improvement</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STOCK REPORT ===== -->
+    <div class="tab-pane fade" id="stock-tab">
+      <div class="report-section fade-in">
+        <h3>📦 Current Stock Inventory</h3>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Brand</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Stock Value</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if medicines %}
+                {% for med in medicines %}
+                  <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.02 }}s">
+                    <td><strong>{{ med.name }}</strong></td>
+                    <td>{{ med.brand }}</td>
+                    <td>
+                      <span class="badge {% if med.quantity > 50 %}bg-success{% elif med.quantity > 10 %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ med.quantity }}
+                      </span>
+                    </td>
+                    <td>${{ "%.2f"|format(med.price) }}</td>
+                    <td><strong>${{ "%.2f"|format(med.price * med.quantity) }}</strong></td>
+                    <td>
+                      {% if med.expiry_date %}
+                        {{ med.expiry_date.strftime('%b %d, %Y') }}
+                      {% else %}
+                        <span class="text-muted">N/A</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if med.quantity == 0 %}
+                        <span class="badge bg-danger">Out of Stock</span>
+                      {% elif med.quantity < 10 %}
+                        <span class="badge bg-warning">Low Stock</span>
+                      {% elif med.expiry_date and med.expiry_date <= today %}
+                        <span class="badge bg-danger">Expired</span>
+                      {% elif med.expiry_date and med.expiry_date <= today %}
+                        <span class="badge bg-warning">Expiring Soon</span>
+                      {% else %}
+                        <span class="badge bg-success">Good</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted">No medicines in inventory</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Management Section -->
+  <div class="data-management-section fade-in" style="animation-delay: 0.4s">
+    <div class="management-header">
+      <h3>⚙️ Data Management</h3>
+      <p class="text-muted">Manage historical sales and inventory data</p>
+    </div>
+    
+    <form action="{{ url_for('reset_confirm') }}" method="post" class="management-form">
+      <input type="hidden" name="csrf_token" value="{{ generate_csrf() }}">
+      <div class="form-group">
+        <label class="form-label">Reset Data Period:</label>
+        <div class="reset-options">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="period" id="daily" value="daily" required>
+            <label class="form-check-label" for="daily">
+              <strong>Daily</strong> - Delete sales older than 24 hours
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="period" id="monthly" value="monthly">
+            <label class="form-check-label" for="monthly">
+              <strong>Monthly</strong> - Delete sales older than 30 days
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="period" id="half_yearly" value="half_yearly">
+            <label class="form-check-label" for="half_yearly">
+              <strong>Half-Yearly</strong> - Delete sales older than 180 days
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="period" id="yearly" value="yearly">
+            <label class="form-check-label" for="yearly">
+              <strong>Yearly</strong> - Delete sales older than 365 days
+            </label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-warning btn-lg" data-loading="true">
+        🗑️ Proceed to Reset
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+.reports-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.reports-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(16, 185, 129, 0.1));
+  border-radius: 12px;
+}
+
+.reports-header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+/* Tabs Styling */
+.nav-reports {
+  border-bottom: 2px solid rgba(14, 165, 233, 0.1);
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.nav-reports .nav-link {
+  background: rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 8px 8px 0 0;
+  padding: 0.75rem 1.5rem;
+  color: #64748b;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.nav-reports .nav-link:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+}
+
+.nav-reports .nav-link.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(16, 185, 129, 0.2));
+  color: #0ea5e9;
+  border-bottom: 3px solid #0ea5e9;
+}
+
+/* Sales Grid */
+.sales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0ea5e9;
+  margin-bottom: 0.25rem;
+}
+
+.metric-count {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.metric-chart-mini {
+  display: flex;
+  gap: 0.25rem;
+  height: 40px;
+  align-items: flex-end;
+}
+
+.metric-chart-mini .bar {
+  flex: 1;
+  background: linear-gradient(180deg, #0ea5e9, #0284c7);
+  border-radius: 4px 4px 0 0;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.metric-chart-mini .bar:hover {
+  opacity: 1;
+}
+
+/* Report Sections */
+.report-section {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.report-section h3 {
+  color: #0f172a;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+  background: transparent;
+}
+
+.table thead {
+  background: rgba(14, 165, 233, 0.08);
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+.table tbody tr:hover {
+  background: rgba(14, 165, 233, 0.05);
+}
+
+/* Best Sellers Grid */
+.bestsellers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.bestseller-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid rgba(14, 165, 233, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bestseller-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.bestseller-card .rank {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.bestseller-card .medicine-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1.5rem;
+  margin-right: 50px;
+}
+
+.bestseller-card .stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: rgba(14, 165, 233, 0.05);
+  border-radius: 6px;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #0ea5e9;
+}
+
+/* Expiry Sections */
+.expiry-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.expiry-section {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(14, 165, 233, 0.1);
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.section-header.danger {
+  border-bottom-color: rgba(239, 68, 68, 0.2);
+}
+
+.section-header.warning {
+  border-bottom-color: rgba(245, 158, 11, 0.2);
+}
+
+.count-badge {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.expiry-item {
+  padding: 1rem;
+  background: rgba(14, 165, 233, 0.05);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid #0ea5e9;
+  transition: all 0.2s;
+}
+
+.expiry-item:hover {
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.expiry-item.expired {
+  background: rgba(239, 68, 68, 0.05);
+  border-left-color: #ef4444;
+}
+
+.expiry-item.warning {
+  background: rgba(245, 158, 11, 0.05);
+  border-left-color: #f59e0b;
+}
+
+.item-name {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.item-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.item-date {
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+.item-date.expired {
+  color: #ef4444;
+}
+
+.item-date.warning {
+  color: #f59e0b;
+}
+
+/* Profit & Loss */
+.profitloss-container {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.profitloss-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metric-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 2px solid rgba(14, 165, 233, 0.1);
+  display: flex;
+  gap: 1rem;
+  transition: all 0.3s;
+}
+
+.metric-box:hover {
+  transform: translateY(-2px);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.metric-box.revenue {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.metric-box.cost {
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.metric-box.profit {
+  border-color: rgba(14, 165, 233, 0.2);
+}
+
+.metric-box.profit.positive {
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.metric-box.profit.negative {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.metric-box.margin {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.metric-icon {
+  font-size: 2rem;
+  min-width: 50px;
+  text-align: center;
+}
+
+.metric-data {
+  flex: 1;
+}
+
+.metric-data .label {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.metric-data .value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0ea5e9;
+}
+
+.metric-box.profit.positive .value {
+  color: #22c55e;
+}
+
+.metric-box.profit.negative .value {
+  color: #ef4444;
+}
+
+.profitloss-table {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.profitloss-table h3 {
+  margin-bottom: 1rem;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.profitloss-table table {
+  margin-bottom: 0;
+}
+
+.profitloss-table tbody tr {
+  border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+}
+
+.profitloss-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.profitloss-table .cost-row td {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.profitloss-table .separator {
+  height: 10px;
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.profitloss-table .profit-row.positive td {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.profitloss-table .profit-row.negative td {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+/* Profit Gauge */
+.profit-gauge {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.gauge-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1.5rem;
+}
+
+.gauge-container {
+  margin-bottom: 1.5rem;
+}
+
+.gauge-bar {
+  height: 30px;
+  background: rgba(14, 165, 233, 0.1);
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
+  transition: width 1s ease-out;
+  border-radius: 15px;
+}
+
+.gauge-fill.excellent {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.gauge-fill.good {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.gauge-fill.fair {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.gauge-fill.poor {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.gauge-status {
+  margin-top: 1.5rem;
+}
+
+/* Data Management */
+.data-management-section {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(239, 68, 68, 0.08));
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 3rem;
+  border: 2px solid rgba(245, 158, 11, 0.2);
+}
+
+.management-header h3 {
+  color: #0f172a;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.management-form {
+  margin-top: 1.5rem;
+}
+
+.form-label {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.reset-options {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-check {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.form-check:hover {
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.form-check-label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .expiry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bestsellers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .sales-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profitloss-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-reports {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .nav-reports .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sales-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .report-section,
+  .expiry-section,
+  .profitloss-container {
+    padding: 1rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+</style>
 {% endblock %}

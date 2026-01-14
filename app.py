@@ -415,22 +415,94 @@ def create_app():
     @app.route('/reports')
     @admin_required
     def reports():
-        # Daily sales report (today)
+        """Main reports page with advanced analytics"""
         today = date.today()
+        
+        # ===== DAILY SALES =====
         start = datetime(today.year, today.month, today.day)
         end = datetime(today.year, today.month, today.day, 23, 59, 59)
-        # Materialize daily sales list and totals
         daily_sales = Sale.query.filter(Sale.timestamp >= start, Sale.timestamp <= end).order_by(Sale.timestamp.desc()).all()
         total_daily = sum(s.total_price for s in daily_sales)
 
+        # ===== WEEKLY SALES =====
+        seven_days_ago = today - timedelta(days=7)
+        week_start = datetime(seven_days_ago.year, seven_days_ago.month, seven_days_ago.day)
+        weekly_sales = db.session.query(
+            func.date(Sale.timestamp).label('date'),
+            func.sum(Sale.total_price).label('total'),
+            func.count(Sale.id).label('count')
+        ).filter(Sale.timestamp >= week_start).group_by(func.date(Sale.timestamp)).order_by('date').all()
+        total_weekly = sum(w[1] for w in weekly_sales) if weekly_sales else 0
+
+        # ===== MONTHLY SALES =====
+        thirty_days_ago = today - timedelta(days=30)
+        month_start = datetime(thirty_days_ago.year, thirty_days_ago.month, thirty_days_ago.day)
+        monthly_sales = db.session.query(
+            func.date(Sale.timestamp).label('date'),
+            func.sum(Sale.total_price).label('total'),
+            func.count(Sale.id).label('count')
+        ).filter(Sale.timestamp >= month_start).group_by(func.date(Sale.timestamp)).order_by('date').all()
+        total_monthly = sum(m[1] for m in monthly_sales) if monthly_sales else 0
+
+        # ===== BEST-SELLING MEDICINES =====
+        best_sellers = db.session.query(
+            Medicine.id,
+            Medicine.name,
+            Medicine.price,
+            func.sum(Sale.quantity).label('total_qty'),
+            func.sum(Sale.total_price).label('total_revenue')
+        ).join(Sale).group_by(Medicine.id, Medicine.name, Medicine.price).order_by(func.sum(Sale.quantity).desc()).limit(10).all()
+
+        # ===== EXPIRED STOCK REPORT =====
+        today = date.today()
+        expired_items = Medicine.query.filter(
+            Medicine.expiry_date.isnot(None),
+            Medicine.expiry_date <= today
+        ).order_by(Medicine.expiry_date.desc()).all()
+        
+        expiring_soon = Medicine.query.filter(
+            Medicine.expiry_date.isnot(None),
+            Medicine.expiry_date > today,
+            Medicine.expiry_date <= today + timedelta(days=30)
+        ).order_by(Medicine.expiry_date).all()
+
+        # ===== PROFIT & LOSS =====
+        all_sales = Sale.query.all()
+        total_revenue = sum(s.total_price for s in all_sales)
+        
+        # Calculate total cost (price * quantity for all sales)
+        total_cost = 0
+        for sale in all_sales:
+            # Assuming cost is calculated from medicine base price
+            # For a real system, you'd store cost separately
+            total_cost += (sale.medicine.price * sale.quantity) * 0.6  # Assuming 40% markup (60% cost)
+        
+        total_profit = total_revenue - total_cost
+        profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+
         # Total sales summary (all time)
-        all_sales = Sale.query.order_by(Sale.timestamp.desc()).all()
         total_all = sum(s.total_price for s in all_sales)
 
         # Stock report
         medicines = Medicine.query.order_by(Medicine.name).all()
 
-        return render_template('reports.html', daily_sales=daily_sales, total_daily=total_daily, total_all=total_all, medicines=medicines, today=today)
+        return render_template('reports.html',
+                             daily_sales=daily_sales,
+                             total_daily=total_daily,
+                             total_weekly=total_weekly,
+                             weekly_sales=weekly_sales,
+                             total_monthly=total_monthly,
+                             monthly_sales=monthly_sales,
+                             total_all=total_all,
+                             medicines=medicines,
+                             best_sellers=best_sellers,
+                             expired_items=expired_items,
+                             expiring_soon=expiring_soon,
+                             total_revenue=total_revenue,
+                             total_cost=total_cost,
+                             total_profit=total_profit,
+                             profit_margin=profit_margin,
+                             today=today)
 
     @app.route('/sales/search')
     @admin_required
