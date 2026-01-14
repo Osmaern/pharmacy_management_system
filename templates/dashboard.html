@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header fade-in">
+    <h1>📊 Dashboard</h1>
+    <p class="text-muted">Real-time pharmacy analytics and inventory overview</p>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card scale-in" style="animation-delay: 0.05s">
+      <div class="stat-icon">📦</div>
+      <div class="stat-content">
+        <h3>{{ total_medicines }}</h3>
+        <p>Total Medicines</p>
+      </div>
+    </div>
+
+    <div class="stat-card scale-in" style="animation-delay: 0.1s">
+      <div class="stat-icon">📈</div>
+      <div class="stat-content">
+        <h3>{{ total_stock }}</h3>
+        <p>Units in Stock</p>
+      </div>
+    </div>
+
+    <div class="stat-card scale-in" style="animation-delay: 0.15s">
+      <div class="stat-icon">💰</div>
+      <div class="stat-content">
+        <h3>${{ "%.2f"|format(total_sales) }}</h3>
+        <p>Total Sales</p>
+      </div>
+    </div>
+
+    <div class="stat-card scale-in alert-card" style="animation-delay: 0.2s">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-content">
+        <h3>{{ expired|length }}</h3>
+        <p>Expired Items</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="charts-section">
+    <!-- Sales Trend Chart -->
+    <div class="chart-card fade-in" style="animation-delay: 0.25s">
+      <div class="chart-header">
+        <h2>📈 Sales Trends (Last 7 Days)</h2>
+        <p class="text-muted">Daily sales revenue</p>
+      </div>
+      <div class="chart-container">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Stock Levels Chart -->
+    <div class="chart-card fade-in" style="animation-delay: 0.3s">
+      <div class="chart-header">
+        <h2>📊 Stock Levels</h2>
+        <p class="text-muted">Current inventory (top 10)</p>
+      </div>
+      <div class="chart-container">
+        <canvas id="stockChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerts Section -->
+  <div class="alerts-section fade-in" style="animation-delay: 0.35s">
+    <div class="alerts-row">
+      <!-- Expiry Alerts -->
+      <div class="alert-box expiry-box">
+        <div class="alert-header">
+          <h3>⏰ Expiring Soon (30 days)</h3>
+          <span class="badge">{{ expiring_soon|length }}</span>
+        </div>
+        <div class="alert-content">
+          {% if expiring_soon %}
+            <div class="alert-list">
+              {% for medicine in expiring_soon %}
+                <div class="alert-item" style="animation-delay: {{ loop.index0 * 0.05 }}s">
+                  <div class="item-name">{{ medicine.name }}</div>
+                  <div class="item-date">{{ medicine.expiry_date.strftime('%b %d, %Y') }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted text-center">✓ No items expiring soon</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Expired Alerts -->
+      <div class="alert-box danger-box">
+        <div class="alert-header">
+          <h3>🚨 Expired Items</h3>
+          <span class="badge bg-danger">{{ expired|length }}</span>
+        </div>
+        <div class="alert-content">
+          {% if expired %}
+            <div class="alert-list">
+              {% for medicine in expired %}
+                <div class="alert-item danger" style="animation-delay: {{ loop.index0 * 0.05 }}s">
+                  <div class="item-name">{{ medicine.name }}</div>
+                  <div class="item-date">Expired: {{ medicine.expiry_date.strftime('%b %d, %Y') }}</div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted text-center">✓ No expired items</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="dashboard-actions fade-in" style="animation-delay: 0.4s">
+    <a href="{{ url_for('medicines') }}" class="btn btn-primary">
+      📦 Manage Inventory
+    </a>
+    <a href="{{ url_for('new_sale') }}" class="btn btn-success">
+      🛒 New Sale
+    </a>
+    <a href="{{ url_for('reports') }}" class="btn btn-info">
+      📋 View Reports
+    </a>
+  </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // === SALES TREND CHART ===
+  const salesCtx = document.getElementById('salesChart');
+  if (salesCtx) {
+    new Chart(salesCtx, {
+      type: 'line',
+      data: {
+        labels: {{ sales_dates | tojson }},
+        datasets: [{
+          label: 'Daily Sales ($)',
+          data: {{ sales_amounts | tojson }},
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14, 165, 233, 0.08)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 6,
+          pointBackgroundColor: '#0ea5e9',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 8,
+          pointHoverBackgroundColor: '#0284c7'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              usePointStyle: true,
+              font: { size: 14, weight: '500' },
+              color: '#0f172a'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 14, weight: '600' },
+            bodyFont: { size: 13 },
+            cornerRadius: 8,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return '$' + context.parsed.y.toFixed(2);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b',
+              callback: function(value) {
+                return '$' + value.toFixed(0);
+              }
+            }
+          },
+          x: {
+            grid: {
+              display: false,
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // === STOCK LEVELS CHART ===
+  const stockCtx = document.getElementById('stockChart');
+  if (stockCtx) {
+    new Chart(stockCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ stock_labels | tojson }},
+        datasets: [{
+          label: 'Units in Stock',
+          data: {{ stock_quantities | tojson }},
+          backgroundColor: [
+            'rgba(14, 165, 233, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(139, 92, 246, 0.8)',
+            'rgba(236, 72, 153, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(34, 197, 94, 0.8)',
+            'rgba(6, 182, 212, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(249, 115, 22, 0.8)'
+          ],
+          borderRadius: 8,
+          borderSkipped: false,
+          hoverBackgroundColor: 'rgba(14, 165, 233, 1)',
+          hoverBorderColor: '#0284c7',
+          hoverBorderWidth: 2
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              usePointStyle: true,
+              font: { size: 14, weight: '500' },
+              color: '#0f172a'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            padding: 12,
+            titleFont: { size: 14, weight: '600' },
+            bodyFont: { size: 13 },
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return context.parsed.x + ' units';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          },
+          y: {
+            grid: {
+              display: false,
+              drawBorder: false
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+
+<style>
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(16, 185, 129, 0.1));
+  border-radius: 12px;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+/* Statistics Cards Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  min-width: 50px;
+  text-align: center;
+}
+
+.stat-content h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0ea5e9;
+  margin: 0;
+}
+
+.stat-content p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.stat-card.alert-card {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.04));
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.stat-card.alert-card .stat-content h3 {
+  color: #ef4444;
+}
+
+/* Charts Section */
+.charts-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chart-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chart-card:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.chart-header h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+.chart-header p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.chart-container {
+  margin-top: 1.5rem;
+  position: relative;
+  height: 300px;
+}
+
+/* Alerts Section */
+.alerts-section {
+  margin-bottom: 3rem;
+}
+
+.alerts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.alert-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  border: 1px solid rgba(14, 165, 233, 0.1);
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(14, 165, 233, 0.1);
+}
+
+.alert-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.alert-box.expiry-box .alert-header {
+  border-bottom-color: rgba(245, 158, 11, 0.2);
+}
+
+.alert-box.danger-box {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.alert-box.danger-box .alert-header {
+  border-bottom-color: rgba(239, 68, 68, 0.2);
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.alert-item {
+  padding: 1rem;
+  background: rgba(14, 165, 233, 0.05);
+  border-radius: 8px;
+  border-left: 4px solid #0ea5e9;
+  animation: fadeInUp 0.4s ease-out backwards;
+}
+
+.alert-item.danger {
+  background: rgba(239, 68, 68, 0.05);
+  border-left-color: #ef4444;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.item-date {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* Action Buttons */
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-actions .btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+
+  .alerts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    padding: 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .chart-card {
+    padding: 1rem;
+  }
+
+  .alert-box {
+    padding: 1rem;
+  }
+}
+</style>
+{% endblock %}
