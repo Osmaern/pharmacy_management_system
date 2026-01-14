@@ -1,0 +1,186 @@
+<!-- ========================================
+     ANIMATION USAGE GUIDE FOR YOUR FORMS
+     ======================================== -->
+
+<!-- 1. LOADING SPINNER ON FORM SUBMIT -->
+<!-- Add data-loading="true" to any form to show spinner on submit -->
+
+<form method="POST" action="/admin/login" data-loading="true">
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input type="email" class="form-control" name="email" required>
+    <div class="invalid-feedback">Please provide a valid email.</div>
+  </div>
+  
+  <div class="mb-3">
+    <label class="form-label">Password</label>
+    <input type="password" class="form-control" name="password" required>
+    <div class="invalid-feedback">Password is required.</div>
+  </div>
+  
+  <!-- Button automatically gets hover/click animations -->
+  <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+<!-- 2. ALERTS WITH AUTO-DISMISS -->
+<!-- These automatically dismiss after 5 seconds -->
+
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <strong>Success!</strong> Your changes have been saved.
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <strong>Error!</strong> Something went wrong. Please try again.
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+<!-- 3. TABLES WITH ROW ANIMATIONS -->
+<!-- Rows automatically fade in with staggered animation -->
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Medicine</th>
+      <th>Price</th>
+      <th>Quantity</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Aspirin</td>
+      <td>$5.00</td>
+      <td>100</td>
+      <td><button class="btn btn-sm btn-primary">Edit</button></td>
+    </tr>
+    <tr>
+      <td>Ibuprofen</td>
+      <td>$7.50</td>
+      <td>85</td>
+      <td><button class="btn btn-sm btn-primary">Edit</button></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 4. FORM WITH VALIDATION ANIMATION -->
+<!-- Errors shake and fade in smoothly -->
+
+<form>
+  <div class="mb-3">
+    <label class="form-label">Medicine Name</label>
+    <input type="text" class="form-control" placeholder="Enter medicine name" required>
+    <div class="invalid-feedback">Medicine name is required.</div>
+  </div>
+  
+  <div class="mb-3">
+    <label class="form-label">Price</label>
+    <input type="number" class="form-control" step="0.01" placeholder="Enter price" required>
+    <div class="invalid-feedback">Valid price is required.</div>
+  </div>
+  
+  <div class="mb-3">
+    <label class="form-label">Category</label>
+    <select class="form-select" required>
+      <option value="">Select category...</option>
+      <option value="pain-relief">Pain Relief</option>
+      <option value="cold-flu">Cold & Flu</option>
+      <option value="antibiotics">Antibiotics</option>
+    </select>
+    <div class="invalid-feedback">Please select a category.</div>
+  </div>
+  
+  <button type="submit" class="btn btn-success">Add Medicine</button>
+</form>
+
+<!-- 5. CARDS WITH HOVER EFFECT -->
+<!-- Cards lift up on hover with shadow animation -->
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Total Medicines</h5>
+        <p class="card-text">250 items in stock</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Sales Today</h5>
+        <p class="card-text">$1,250.00</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6. BUTTON VARIANTS -->
+
+<!-- Primary with ripple effect on click -->
+<button class="btn btn-primary">Save Changes</button>
+
+<!-- Success button -->
+<button class="btn btn-success">Confirm</button>
+
+<!-- Disabled button (no animation) -->
+<button class="btn btn-primary" disabled>Processing...</button>
+
+<!-- Small button -->
+<button class="btn btn-primary btn-sm">Edit</button>
+
+<!-- 7. FADE-IN UTILITY CLASSES -->
+
+<!-- Fade in on page load -->
+<div class="fade-in">
+  This content fades in smoothly
+</div>
+
+<!-- Fade in faster -->
+<div class="fade-in-fast">
+  Quick fade in animation
+</div>
+
+<!-- Scale animation -->
+<div class="scale-in">
+  Scales in from smaller size
+</div>
+
+<!-- Pulse animation (useful for loading states) -->
+<div class="pulse">
+  Loading content...
+</div>
+
+<!-- ========================================
+     HOW TO USE IN YOUR TEMPLATES
+     ======================================== -->
+
+<!-- 1. Add data-loading="true" to forms that should show spinner:
+     <form method="POST" action="/medicines/add" data-loading="true">
+     
+2. Alerts automatically animate in and dismiss after 5 seconds
+
+3. Table rows automatically fade in with staggered timing
+
+4. Button hover/click effects are automatic
+
+5. Form validation errors shake and appear smoothly
+
+6. Cards lift on hover automatically
+
+7. Use utility classes for custom animations:
+   - fade-in: slow fade (0.5s)
+   - fade-in-fast: quick fade (0.3s)
+   - scale-in: zoom in effect
+   - pulse: continuous pulse (loading indicator)
+
+ANIMATION SPEEDS:
+- Button hover: 200ms
+- Alert slide in: 400ms
+- Table row fade: 500ms (staggered)
+- Form validation: 300-400ms
+- Card lift: 300ms
+
+All animations respect prefers-reduced-motion for accessibility!
+-->
