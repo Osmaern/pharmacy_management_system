@@ -4,46 +4,58 @@ class OfflineDatabase {
     this.dbName = 'PharmacyDB';
     this.version = 1;
     this.db = null;
-    this.init();
+    this.available = typeof indexedDB !== 'undefined';
+    if (this.available) {
+      this.init();
+    }
   }
 
   async init() {
+    if (!this.available) return Promise.resolve(null);
+    
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.version);
+      try {
+        const request = indexedDB.open(this.dbName, this.version);
 
-      request.onerror = () => {
-        console.error('IndexedDB error:', request.error);
-        reject(request.error);
-      };
+        request.onerror = () => {
+          console.error('IndexedDB error:', request.error);
+          this.available = false;
+          reject(request.error);
+        };
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        console.log('IndexedDB initialized');
-        resolve(this.db);
-      };
+        request.onsuccess = () => {
+          this.db = request.result;
+          console.log('IndexedDB initialized');
+          resolve(this.db);
+        };
 
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        
-        // Create object stores if they don't exist
-        if (!db.objectStoreNames.contains('medicines')) {
-          db.createObjectStore('medicines', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('sales')) {
-          db.createObjectStore('sales', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('customers')) {
-          db.createObjectStore('customers', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('offlineSalesQueue')) {
-          db.createObjectStore('offlineSalesQueue', { keyPath: 'timestamp' });
-        }
-        if (!db.objectStoreNames.contains('metadata')) {
-          db.createObjectStore('metadata', { keyPath: 'key' });
-        }
-        
-        console.log('IndexedDB stores created');
-      };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          
+          // Create object stores if they don't exist
+          if (!db.objectStoreNames.contains('medicines')) {
+            db.createObjectStore('medicines', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('sales')) {
+            db.createObjectStore('sales', { keyPath: 'id', autoIncrement: true });
+          }
+          if (!db.objectStoreNames.contains('customers')) {
+            db.createObjectStore('customers', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('offlineSalesQueue')) {
+            db.createObjectStore('offlineSalesQueue', { keyPath: 'timestamp' });
+          }
+          if (!db.objectStoreNames.contains('metadata')) {
+            db.createObjectStore('metadata', { keyPath: 'key' });
+          }
+          
+          console.log('IndexedDB stores created');
+        };
+      } catch (err) {
+        console.error('IndexedDB initialization error:', err);
+        this.available = false;
+        reject(err);
+      }
     });
   }
 

@@ -3,7 +3,11 @@ class OfflineManager {
   constructor() {
     this.isOnline = navigator.onLine;
     this.syncing = false;
-    this.init();
+    try {
+      this.init();
+    } catch (err) {
+      console.warn('OfflineManager initialization error:', err);
+    }
   }
 
   init() {
@@ -57,7 +61,7 @@ class OfflineManager {
   }
 
   async syncOfflineData() {
-    if (this.syncing || !this.isOnline) return;
+    if (this.syncing || !this.isOnline || !offlineDB || !offlineDB.available) return;
     
     this.syncing = true;
     console.log('Starting offline data sync...');
@@ -160,5 +164,11 @@ class OfflineManager {
   }
 }
 
-// Global instance
-const offlineManager = new OfflineManager();
+// Global instance (wrapped in try-catch for safety)
+let offlineManager;
+try {
+  offlineManager = new OfflineManager();
+} catch (err) {
+  console.warn('Failed to initialize offline manager:', err);
+  offlineManager = null;
+}
