@@ -35,7 +35,7 @@
           {% endif %}
         </td>
         <td>{{m.category or ''}}</td>
-        <td>{{'%.2f'|format(m.price)}}</td>
+        <td>₵{{'%.2f'|format(m.price)}}</td>
         <td>
           {% if m.quantity == 0 %}
             <span class="text-danger">Finish</span>

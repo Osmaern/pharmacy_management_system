@@ -35,7 +35,7 @@
         <!-- Daily Sales Card -->
         <div class="metric-card scale-in" style="animation-delay: 0.05s">
           <div class="metric-label">Today's Sales</div>
-          <div class="metric-value">${{ "%.2f"|format(total_daily) }}</div>
+          <div class="metric-value">₵{{ "%.2f"|format(total_daily) }}</div>
           <div class="metric-count">{{ daily_sales|length }} transactions</div>
           <div class="metric-chart-mini">
             <div class="bar" style="height: 40%"></div>
@@ -48,7 +48,7 @@
         <!-- Weekly Sales Card -->
         <div class="metric-card scale-in" style="animation-delay: 0.1s">
           <div class="metric-label">This Week</div>
-          <div class="metric-value">${{ "%.2f"|format(total_weekly) }}</div>
+          <div class="metric-value">₵{{ "%.2f"|format(total_weekly) }}</div>
           <div class="metric-count">{{ weekly_sales|length }} days</div>
           <div class="metric-chart-mini">
             <div class="bar" style="height: 50%"></div>
@@ -62,7 +62,7 @@
         <!-- Monthly Sales Card -->
         <div class="metric-card scale-in" style="animation-delay: 0.15s">
           <div class="metric-label">This Month</div>
-          <div class="metric-value">${{ "%.2f"|format(total_monthly) }}</div>
+          <div class="metric-value">₵{{ "%.2f"|format(total_monthly) }}</div>
           <div class="metric-count">{{ monthly_sales|length }} days</div>
           <div class="metric-chart-mini">
             <div class="bar" style="height: 40%"></div>
@@ -76,7 +76,7 @@
         <!-- All-Time Sales Card -->
         <div class="metric-card scale-in" style="animation-delay: 0.2s">
           <div class="metric-label">All-Time Total</div>
-          <div class="metric-value">${{ "%.2f"|format(total_all) }}</div>
+          <div class="metric-value">₵{{ "%.2f"|format(total_all) }}</div>
           <div class="metric-count">{{ daily_sales|length }} total transactions</div>
           <div class="metric-chart-mini">
             <div class="bar" style="height: 50%"></div>
@@ -109,8 +109,8 @@
                     <td>#{{ s.id }}</td>
                     <td><strong>{{ s.medicine.name }}</strong></td>
                     <td><span class="badge bg-info">{{ s.quantity }}</span></td>
-                    <td>${{ "%.2f"|format(s.medicine.price) }}</td>
-                    <td><strong>${{ "%.2f"|format(s.total_price) }}</strong></td>
+                    <td>₵{{ "%.2f"|format(s.medicine.price) }}</td>
+                    <td><strong>₵{{ "%.2f"|format(s.total_price) }}</strong></td>
                     <td>{{ s.timestamp.strftime('%H:%M:%S') }}</td>
                   </tr>
                 {% endfor %}
@@ -143,8 +143,8 @@
                   <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.03 }}s">
                     <td><strong>{{ w[0] }}</strong></td>
                     <td><span class="badge bg-primary">{{ w[2] }}</span></td>
-                    <td>${{ "%.2f"|format(w[1] or 0) }}</td>
-                    <td>${{ "%.2f"|format((w[1] or 0) / (w[2] or 1)) }}</td>
+                    <td>₵{{ "%.2f"|format(w[1] or 0) }}</td>
+                    <td>₵{{ "%.2f"|format((w[1] or 0) / (w[2] or 1)) }}</td>
                   </tr>
                 {% endfor %}
               {% else %}
@@ -175,7 +175,7 @@
                   <tr class="fade-in" style="animation-delay: {{ loop.index0 * 0.02 }}s">
                     <td><strong>{{ m[0] }}</strong></td>
                     <td><span class="badge bg-success">{{ m[2] }}</span></td>
-                    <td>${{ "%.2f"|format(m[1] or 0) }}</td>
+                    <td>₵{{ "%.2f"|format(m[1] or 0) }}</td>
                   </tr>
                 {% endfor %}
               {% else %}
@@ -206,11 +206,11 @@
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">Revenue:</span>
-                    <span class="stat-value">${{ "%.2f"|format(medicine[4] or 0) }}</span>
+                    <span class="stat-value">₵{{ "%.2f"|format(medicine[4] or 0) }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">Price:</span>
-                    <span class="stat-value">${{ "%.2f"|format(medicine[2]) }}</span>
+                    <span class="stat-value">₵{{ "%.2f"|format(medicine[2]) }}</span>
                   </div>
                 </div>
               </div>
@@ -287,7 +287,7 @@
             <div class="metric-icon">📈</div>
             <div class="metric-data">
               <div class="label">Total Revenue</div>
-              <div class="value">${{ "%.2f"|format(total_revenue) }}</div>
+              <div class="value">₵{{ "%.2f"|format(total_revenue) }}</div>
             </div>
           </div>
 
@@ -295,7 +295,7 @@
             <div class="metric-icon">📦</div>
             <div class="metric-data">
               <div class="label">Total Cost</div>
-              <div class="value">${{ "%.2f"|format(total_cost) }}</div>
+              <div class="value">₵{{ "%.2f"|format(total_cost) }}</div>
             </div>
           </div>
 
@@ -303,7 +303,7 @@
             <div class="metric-icon">💰</div>
             <div class="metric-data">
               <div class="label">Net Profit</div>
-              <div class="value">{% if total_profit >= 0 %}+{% endif %}${{ "%.2f"|format(total_profit) }}</div>
+              <div class="value">{% if total_profit >= 0 %}+{% endif %}₵{{ "%.2f"|format(total_profit) }}</div>
             </div>
           </div>
 
@@ -323,18 +323,18 @@
             <tbody>
               <tr>
                 <td><strong>Total Revenue (All Sales)</strong></td>
-                <td class="text-end"><strong>${{ "%.2f"|format(total_revenue) }}</strong></td>
+                <td class="text-end"><strong>₵{{ "%.2f"|format(total_revenue) }}</strong></td>
               </tr>
               <tr class="cost-row">
                 <td><strong>Total Cost of Goods</strong></td>
-                <td class="text-end"><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
+                <td class="text-end"><strong>₵{{ "%.2f"|format(total_cost) }}</strong></td>
               </tr>
               <tr class="separator">
                 <td colspan="2"></td>
               </tr>
               <tr class="profit-row {% if total_profit >= 0 %}positive{% else %}negative{% endif %}">
                 <td><strong>Net Profit</strong></td>
-                <td class="text-end"><strong>{% if total_profit >= 0 %}+{% endif %}${{ "%.2f"|format(total_profit) }}</strong></td>
+                <td class="text-end"><strong>{% if total_profit >= 0 %}+{% endif %}₵{{ "%.2f"|format(total_profit) }}</strong></td>
               </tr>
               <tr>
                 <td><strong>Profit Margin</strong></td>
@@ -399,8 +399,8 @@
                         {{ med.quantity }}
                       </span>
                     </td>
-                    <td>${{ "%.2f"|format(med.price) }}</td>
-                    <td><strong>${{ "%.2f"|format(med.price * med.quantity) }}</strong></td>
+                    <td>₵{{ "%.2f"|format(med.price) }}</td>
+                    <td><strong>₵{{ "%.2f"|format(med.price * med.quantity) }}</strong></td>
                     <td>
                       {% if med.expiry_date %}
                         {{ med.expiry_date.strftime('%b %d, %Y') }}

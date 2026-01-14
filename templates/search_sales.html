@@ -19,7 +19,7 @@
 
   <div id="results-container">
     <div class="d-flex justify-content-between align-items-center">
-      <p class="mb-0"><strong>Total (filtered):</strong> {{'%.2f'|format(total_all)}}</p>
+      <p class="mb-0"><strong>Total (filtered):</strong> ₵{{'%.2f'|format(total_all)}}</p>
       <div class="btn-group">
         <a id="search-export" href="{{ url_for('export_sales', q=q or '', from_date=from_date or '', to_date=to_date or '') }}" class="btn btn-sm btn-success">Export</a>
         <a id="search-clear" href="{{ url_for('search_sales') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
@@ -37,7 +37,7 @@
             <td>{{s.medicine.name}}</td>
             <td>{{s.customer.name if s.customer else '—'}}</td>
             <td>{{s.quantity}}</td>
-            <td>{{'%.2f'|format(s.total_price)}}</td>
+            <td>₵{{'%.2f'|format(s.total_price)}}</td>
             <td>{{s.timestamp}}</td>
           </tr>
         {% endfor %}

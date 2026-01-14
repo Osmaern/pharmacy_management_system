@@ -7,8 +7,8 @@
       <p><strong>Date:</strong> {{sale.timestamp}}</p>
       <p><strong>Medicine:</strong> {{sale.medicine.name}}</p>
       <p><strong>Quantity:</strong> {{sale.quantity}}</p>
-      <p><strong>Unit Price:</strong> {{'%.2f'|format(sale.price_per_unit)}}</p>
-      <p><strong>Total:</strong> {{'%.2f'|format(sale.total_price)}}</p>
+      <p><strong>Unit Price:</strong> ₵{{'%.2f'|format(sale.price_per_unit)}}</p>
+      <p><strong>Total:</strong> ₵{{'%.2f'|format(sale.total_price)}}</p>
       {% if sale.customer %}
         <p><strong>Customer:</strong> {{sale.customer.name}} {{sale.customer.phone and '(' ~ sale.customer.phone ~ ')'}} </p>
       {% endif %}

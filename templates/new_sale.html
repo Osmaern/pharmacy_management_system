@@ -8,7 +8,7 @@
       <select name="medicine_id" class="form-select" required>
         <option value="">-- choose medicine --</option>
         {% for m in medicines %}
-          <option value="{{m.id}}">{{m.name}} ({{m.quantity}} in stock) - {{'%.2f'|format(m.price)}}</option>
+          <option value="{{m.id}}">{{m.name}} ({{m.quantity}} in stock) - ₵{{'%.2f'|format(m.price)}}</option>
         {% endfor %}
       </select>
     </div>

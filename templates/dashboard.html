@@ -29,7 +29,7 @@
     <div class="stat-card scale-in" style="animation-delay: 0.15s">
       <div class="stat-icon">💰</div>
       <div class="stat-content">
-        <h3>${{ "%.2f"|format(total_sales) }}</h3>
+        <h3>₵{{ "%.2f"|format(total_sales) }}</h3>
         <p>Total Sales</p>
       </div>
     </div>
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: salesDates,
         datasets: [{
-          label: 'Daily Sales ($)',
+          label: 'Daily Sales (₵)',
           data: salesAmounts,
           borderColor: '#0ea5e9',
           backgroundColor: 'rgba(14, 165, 233, 0.08)',
@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
             displayColors: false,
             callbacks: {
               label: function(context) {
-                return '$' + context.parsed.y.toFixed(2);
+                return '₵' + context.parsed.y.toFixed(2);
               }
             }
           }
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ticks: {
               color: '#64748b',
               callback: function(value) {
-                return '$' + value.toFixed(0);
+                return '₵' + value.toFixed(0);
               }
             }
           },
