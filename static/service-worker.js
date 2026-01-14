@@ -1,9 +1,17 @@
 // Service Worker for offline functionality
-const CACHE_NAME = 'pharmacy-v1';
+const CACHE_NAME = 'pharmacy-v2';
 const STATIC_ASSETS = [
   '/',
+  '/dashboard',
+  '/medicines',
+  '/customers',
+  '/reports',
+  '/sales/search',
   '/static/animations.css',
   '/static/animations.js',
+  '/static/offline-db.js',
+  '/static/offline-manager.js',
+  '/static/manifest.json',
   '/static/offline.html',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',

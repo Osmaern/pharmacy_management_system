@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Offline - Pharmacy Management System</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/animations.css">
     <style>
         body {
             display: flex;
@@ -13,6 +12,7 @@
             justify-content: center;
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         .offline-container {
             background: white;
@@ -44,6 +44,7 @@
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 30px;
+            border-left: 4px solid #667eea;
         }
         .offline-tips h5 {
             color: #333;
@@ -57,6 +58,7 @@
         .offline-tips li {
             color: #666;
             margin-bottom: 8px;
+            font-size: 0.95rem;
         }
         .btn-retry {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -65,11 +67,19 @@
             font-weight: 600;
             padding: 12px 40px;
             border-radius: 8px;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            font-size: 1rem;
         }
         .btn-retry:hover {
             color: white;
             transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .status-text {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #999;
         }
         @keyframes slideUp {
             from {
@@ -90,24 +100,24 @@
 <body>
     <div class="offline-container">
         <div class="offline-icon">📡</div>
-        <h1>No Internet Connection</h1>
-        <p>You are currently offline. Some features may be limited.</p>
+        <h1>You're Offline</h1>
+        <p>No internet connection detected. The app is in offline mode.</p>
         
         <div class="offline-tips">
-            <h5>What you can do:</h5>
+            <h5>While Offline:</h5>
             <ul>
-                <li>✓ View cached pages and data</li>
-                <li>✓ Review previous transactions</li>
-                <li>✓ Queue new sales (syncs when online)</li>
-                <li>✗ Add new medicines (requires connection)</li>
-                <li>✗ Sync data to server (until connected)</li>
+                <li>✓ Browse cached pages (Dashboard, Medicines, Reports)</li>
+                <li>✓ View your sales history</li>
+                <li>✓ Record new sales locally</li>
+                <li>✗ Can't sync new data to server</li>
+                <li>✗ Can't add new medicines or customers</li>
             </ul>
         </div>
 
         <button class="btn-retry" onclick="location.reload()">
             <span id="retry-text">Retry Connection</span>
         </button>
-        <p style="margin-top: 20px; font-size: 0.9rem; color: #999;">
+        <p class="status-text">
             <span id="status-text">Waiting for connection...</span>
         </p>
     </div>
@@ -115,19 +125,21 @@
     <script>
         // Check connection status periodically
         function checkConnection() {
-            fetch('/').then(() => {
-                document.getElementById('retry-text').textContent = 'Back Online!';
-                document.getElementById('status-text').textContent = 'Connection restored!';
-                setTimeout(() => location.href = '/', 2000);
-            }).catch(() => {
-                // Still offline
-                const now = new Date().toLocaleTimeString();
-                document.getElementById('status-text').textContent = `Last checked: ${now}`;
-            });
+            fetch('/', { method: 'HEAD', cache: 'no-store' })
+                .then(() => {
+                    document.getElementById('retry-text').textContent = 'Back Online! ';
+                    document.getElementById('status-text').textContent = 'Connection restored! Redirecting...';
+                    document.querySelector('.offline-container').style.animation = 'slideUp 0.6s ease-out reverse';
+                    setTimeout(() => location.href = '/', 1500);
+                })
+                .catch(() => {
+                    const now = new Date().toLocaleTimeString();
+                    document.getElementById('status-text').textContent = `Last checked: ${now}`;
+                });
         }
 
-        // Check every 5 seconds
-        setInterval(checkConnection, 5000);
+        // Check every 3 seconds
+        setInterval(checkConnection, 3000);
         checkConnection(); // Check immediately
     </script>
 </body>
