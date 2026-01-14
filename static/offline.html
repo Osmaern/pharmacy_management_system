@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Pharmacy Management System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/animations.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .offline-container {
+            background: white;
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.6s ease-out;
+        }
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .offline-tips {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .offline-tips h5 {
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .offline-tips ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .offline-tips li {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .btn-retry {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 40px;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+        .btn-retry:hover {
+            color: white;
+            transform: translateY(-2px);
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>No Internet Connection</h1>
+        <p>You are currently offline. Some features may be limited.</p>
+        
+        <div class="offline-tips">
+            <h5>What you can do:</h5>
+            <ul>
+                <li>✓ View cached pages and data</li>
+                <li>✓ Review previous transactions</li>
+                <li>✓ Queue new sales (syncs when online)</li>
+                <li>✗ Add new medicines (requires connection)</li>
+                <li>✗ Sync data to server (until connected)</li>
+            </ul>
+        </div>
+
+        <button class="btn-retry" onclick="location.reload()">
+            <span id="retry-text">Retry Connection</span>
+        </button>
+        <p style="margin-top: 20px; font-size: 0.9rem; color: #999;">
+            <span id="status-text">Waiting for connection...</span>
+        </p>
+    </div>
+
+    <script>
+        // Check connection status periodically
+        function checkConnection() {
+            fetch('/').then(() => {
+                document.getElementById('retry-text').textContent = 'Back Online!';
+                document.getElementById('status-text').textContent = 'Connection restored!';
+                setTimeout(() => location.href = '/', 2000);
+            }).catch(() => {
+                // Still offline
+                const now = new Date().toLocaleTimeString();
+                document.getElementById('status-text').textContent = `Last checked: ${now}`;
+            });
+        }
+
+        // Check every 5 seconds
+        setInterval(checkConnection, 5000);
+        checkConnection(); // Check immediately
+    </script>
+</body>
+</html>

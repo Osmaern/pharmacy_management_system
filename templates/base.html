@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="description" content="Professional pharmacy management system with offline support">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230ea5e9' width='100' height='100' rx='20'/><text x='50' y='60' font-size='70' fill='white' text-anchor='middle' font-weight='bold'>Rx</text></svg>">
     <title>Jones's Pharmacy System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='animations.css') }}" rel="stylesheet">
@@ -143,6 +147,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='animations.js') }}"></script>
+    <script src="{{ url_for('static', filename='offline-db.js') }}"></script>
+    <script src="{{ url_for('static', filename='offline-manager.js') }}"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('{{ url_for("static", filename="service-worker.js") }}')
+          .then(reg => console.log('✓ Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      }
+    </script>
+    
     <script>
       // Client-side clock: updates every second to show current local date/time
       (function(){

@@ -349,18 +349,33 @@ def create_app():
     def new_sale():
         medicines = Medicine.query.filter(Medicine.quantity > 0).order_by(Medicine.name).all()
         customers = Customer.query.order_by(Customer.name).all()
+        
         if request.method == 'POST':
+            # Handle both form submissions and JSON API requests (from offline mode)
+            is_json = request.is_json
             try:
-                med_id = int(request.form['medicine_id'])
-                qty = int(request.form['quantity'])
-                customer_id = request.form.get('customer_id') or None
+                if is_json:
+                    data = request.get_json()
+                    med_id = int(data.get('medicine_id'))
+                    qty = int(data.get('quantity'))
+                    customer_id = data.get('customer_id')
+                else:
+                    med_id = int(request.form['medicine_id'])
+                    qty = int(request.form['quantity'])
+                    customer_id = request.form.get('customer_id') or None
 
                 med = Medicine.query.get_or_404(med_id)
                 if qty <= 0:
-                    flash('Quantity must be positive.', 'danger')
+                    msg = 'Quantity must be positive.'
+                    if is_json:
+                        return jsonify({'error': msg}), 400
+                    flash(msg, 'danger')
                     return redirect(url_for('new_sale'))
                 if med.quantity < qty:
-                    flash('Not enough stock for that medicine.', 'danger')
+                    msg = 'Not enough stock for that medicine.'
+                    if is_json:
+                        return jsonify({'error': msg}), 400
+                    flash(msg, 'danger')
                     return redirect(url_for('new_sale'))
 
                 price_per_unit = med.price
@@ -372,14 +387,24 @@ def create_app():
                 sale = Sale(medicine=med, quantity=qty, price_per_unit=price_per_unit, total_price=total_price, customer_id=int(customer_id) if customer_id else None)
                 db.session.add(sale)
                 db.session.commit()
+                
+                if is_json:
+                    return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
+                
                 flash('Sale recorded.', 'success')
                 return redirect(url_for('receipt', sale_id=sale.id))
             except ValueError:
-                flash('Invalid medicine or quantity.', 'danger')
+                msg = 'Invalid medicine or quantity.'
+                if is_json:
+                    return jsonify({'error': msg}), 400
+                flash(msg, 'danger')
                 return redirect(url_for('new_sale'))
             except Exception as e:
                 db.session.rollback()
-                flash(f'Error recording sale: {str(e)}', 'danger')
+                msg = f'Error recording sale: {str(e)}'
+                if is_json:
+                    return jsonify({'error': msg}), 500
+                flash(msg, 'danger')
                 return redirect(url_for('new_sale'))
 
         return render_template('new_sale.html', medicines=medicines, customers=customers)
