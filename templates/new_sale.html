@@ -95,23 +95,15 @@
             return;
           }
 
-          // Wait for DB to be ready
-          if (!window.offlineDB.db) {
-            console.log('Waiting for IndexedDB to initialize...');
-            // Wait up to 3 seconds for DB to initialize
-            let waited = 0;
-            while (!window.offlineDB.db && waited < 3000) {
-              await new Promise(r => setTimeout(r, 100));
-              waited += 100;
-            }
-            
-            if (!window.offlineDB.db) {
-              console.error('IndexedDB failed to initialize');
-              alert('Database initialization failed.');
-              submitBtn.disabled = false;
-              submitBtn.innerHTML = 'Record Sale';
-              return;
-            }
+          // Wait for DB to be ready using ensureReady
+          try {
+            await window.offlineDB.ensureReady();
+          } catch (err) {
+            console.error('Database not ready:', err);
+            alert('Database initialization failed: ' + err.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Record Sale';
+            return;
           }
 
           const sale = {

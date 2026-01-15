@@ -5,12 +5,14 @@ class OfflineDatabase {
     this.version = 1;
     this.db = null;
     this.available = typeof indexedDB !== 'undefined';
+    this.readyPromise = null;
+    
     if (this.available) {
-      this.init();
+      this.readyPromise = this.init();
     }
   }
 
-  async init() {
+  init() {
     if (!this.available) return Promise.resolve(null);
     
     return new Promise((resolve, reject) => {
@@ -25,7 +27,7 @@ class OfflineDatabase {
 
         request.onsuccess = () => {
           this.db = request.result;
-          console.log('IndexedDB initialized');
+          console.log('offline-db.js:25 IndexedDB initialized');
           resolve(this.db);
         };
 
@@ -92,8 +94,19 @@ class OfflineDatabase {
     });
   }
 
+  // Ensure DB is ready before operations
+  async ensureReady() {
+    if (this.readyPromise) {
+      await this.readyPromise;
+    }
+    if (!this.db) {
+      throw new Error('IndexedDB not initialized');
+    }
+  }
+
   // Queue offline sale
   async queueSale(saleData) {
+    await this.ensureReady();
     const transaction = this.db.transaction(['offlineSalesQueue'], 'readwrite');
     const store = transaction.objectStore('offlineSalesQueue');
     const queueItem = {
@@ -103,13 +116,17 @@ class OfflineDatabase {
     };
     return new Promise((resolve, reject) => {
       const request = store.add(queueItem);
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        console.log('offline-db.js:130 Sale queued:', queueItem);
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error);
     });
   }
 
   // Get all queued sales
   async getQueuedSales() {
+    await this.ensureReady();
     const transaction = this.db.transaction(['offlineSalesQueue'], 'readonly');
     const store = transaction.objectStore('offlineSalesQueue');
     return new Promise((resolve, reject) => {
@@ -121,6 +138,7 @@ class OfflineDatabase {
 
   // Mark sale as synced
   async markSaleSynced(timestamp) {
+    await this.ensureReady();
     const transaction = this.db.transaction(['offlineSalesQueue'], 'readwrite');
     const store = transaction.objectStore('offlineSalesQueue');
     return new Promise((resolve, reject) => {
