@@ -1,20 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
   <h2>Record New Sale</h2>
-  <form method="post">
+  
+  <!-- Offline notice -->
+  <div id="offline-notice" class="alert alert-warning" style="display:none;">
+    <strong>📱 Offline Mode:</strong> Sales will be saved locally and synced when you're back online.
+  </div>
+
+  <form id="sale-form" method="post">
     {{ csrf_token() }}
     <div class="mb-3">
       <label class="form-label">Medicine</label>
-      <select name="medicine_id" class="form-select" required>
+      <select id="medicine-select" name="medicine_id" class="form-select" required>
         <option value="">-- choose medicine --</option>
         {% for m in medicines %}
-          <option value="{{m.id}}">{{m.name}} ({{m.quantity}} in stock) - ₵{{'%.2f'|format(m.price)}}</option>
+          <option value="{{m.id}}" data-price="{{m.price}}" data-stock="{{m.quantity}}">{{m.name}} ({{m.quantity}} in stock) - ₵{{'%.2f'|format(m.price)}}</option>
         {% endfor %}
       </select>
     </div>
     <div class="mb-3">
       <label class="form-label">Quantity</label>
-      <input name="quantity" type="number" class="form-control" value="1" min="1" required>
+      <input id="quantity-input" name="quantity" type="number" class="form-control" value="1" min="1" required>
     </div>
     <div class="mb-3">
       <label class="form-label">Customer (optional)</label>
@@ -25,6 +31,101 @@
         {% endfor %}
       </select>
     </div>
-    <button class="btn btn-success">Record Sale</button>
+    <div class="mb-3">
+      <p><strong>Total: ₵<span id="total">0.00</span></strong></p>
+    </div>
+    <button type="submit" class="btn btn-success" id="submit-btn">Record Sale</button>
+    <a href="/" class="btn btn-secondary">Back</a>
   </form>
+
+  <script>
+    // Update total price when medicine or quantity changes
+    document.getElementById('medicine-select').addEventListener('change', updateTotal);
+    document.getElementById('quantity-input').addEventListener('input', updateTotal);
+
+    function updateTotal() {
+      const select = document.getElementById('medicine-select');
+      const qty = parseInt(document.getElementById('quantity-input').value) || 1;
+      const option = select.options[select.selectedIndex];
+      const price = parseFloat(option.dataset.price) || 0;
+      const total = (price * qty).toFixed(2);
+      document.getElementById('total').textContent = total;
+    }
+
+    // Handle form submission
+    document.getElementById('sale-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const medicineId = document.getElementById('medicine-select').value;
+      const quantity = document.getElementById('quantity-input').value;
+      const customerId = document.querySelector('select[name="customer_id"]').value || null;
+
+      if (!medicineId) {
+        alert('Please select a medicine');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Saving...';
+
+      try {
+        // Check if online
+        if (navigator.onLine) {
+          // Online - submit via regular form
+          document.getElementById('sale-form').submit();
+        } else {
+          // Offline - save to IndexedDB
+          if (!offlineDB || !offlineDB.available) {
+            alert('Offline storage unavailable. Please try again when online.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Record Sale';
+            return;
+          }
+
+          const sale = {
+            medicine_id: parseInt(medicineId),
+            quantity: parseInt(quantity),
+            customer_id: customerId ? parseInt(customerId) : null
+          };
+
+          await offlineDB.queueSale(sale);
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            ✓ Sale saved offline! It will sync when you're back online.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          `;
+          document.body.insertBefore(alertDiv, document.body.firstChild);
+
+          // Reset form
+          document.getElementById('sale-form').reset();
+          updateTotal();
+          
+          setTimeout(() => alertDiv.remove(), 3000);
+        }
+      } catch (err) {
+        console.error('Error saving sale:', err);
+        alert('Error saving sale: ' + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Record Sale';
+      }
+    });
+
+    // Show offline notice if offline
+    if (!navigator.onLine) {
+      document.getElementById('offline-notice').style.display = 'block';
+    }
+
+    window.addEventListener('offline', () => {
+      document.getElementById('offline-notice').style.display = 'block';
+    });
+
+    window.addEventListener('online', () => {
+      document.getElementById('offline-notice').style.display = 'none';
+    });
+  </script>
 {% endblock %}
