@@ -174,3 +174,8 @@ class OfflineDatabase {
 
 // Global instance
 const offlineDB = new OfflineDatabase();
+
+// Also attach to window for easier access
+window.offlineDB = offlineDB;
+
+console.log('OfflineDatabase initialized:', offlineDB.available);

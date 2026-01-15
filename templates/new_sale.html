@@ -72,24 +72,57 @@
       try {
         // Check if online
         if (navigator.onLine) {
+          console.log('Online - submitting form normally');
           // Online - submit via regular form
           document.getElementById('sale-form').submit();
         } else {
+          console.log('Offline - attempting to save to IndexedDB');
+          
           // Offline - save to IndexedDB
-          if (!offlineDB || !offlineDB.available) {
-            alert('Offline storage unavailable. Please try again when online.');
+          if (!window.offlineDB) {
+            console.error('offlineDB not available');
+            alert('Offline storage not available. Please try again when online.');
             submitBtn.disabled = false;
             submitBtn.innerHTML = 'Record Sale';
             return;
           }
 
+          if (!window.offlineDB.available) {
+            console.error('IndexedDB not available');
+            alert('IndexedDB not available on this device.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Record Sale';
+            return;
+          }
+
+          // Wait for DB to be ready
+          if (!window.offlineDB.db) {
+            console.log('Waiting for IndexedDB to initialize...');
+            // Wait up to 3 seconds for DB to initialize
+            let waited = 0;
+            while (!window.offlineDB.db && waited < 3000) {
+              await new Promise(r => setTimeout(r, 100));
+              waited += 100;
+            }
+            
+            if (!window.offlineDB.db) {
+              console.error('IndexedDB failed to initialize');
+              alert('Database initialization failed.');
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = 'Record Sale';
+              return;
+            }
+          }
+
           const sale = {
             medicine_id: parseInt(medicineId),
             quantity: parseInt(quantity),
-            customer_id: customerId ? parseInt(customerId) : null
+            customer_id: customerId ? parseInt(customerId) : null,
+            timestamp: Date.now()
           };
 
-          await offlineDB.queueSale(sale);
+          console.log('Queueing sale:', sale);
+          await window.offlineDB.queueSale(sale);
           
           // Show success message
           const alertDiv = document.createElement('div');
