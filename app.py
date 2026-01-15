@@ -211,7 +211,12 @@ def create_app():
     # Serve Service Worker from root for proper scope
     @app.route('/service-worker.js')
     def service_worker():
-        return send_file('static/service-worker.js', mimetype='application/javascript', cache_timeout=0)
+        try:
+            sw_path = os.path.join(BASE_DIR, 'static', 'service-worker.js')
+            return send_file(sw_path, mimetype='application/javascript', cache_timeout=0)
+        except Exception as e:
+            print(f"Error serving service-worker.js: {e}")
+            return f"Service Worker not found: {e}", 500
 
     # ---------- DASHBOARD ROUTE ----------
     @app.route('/dashboard')
