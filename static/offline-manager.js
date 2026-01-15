@@ -80,10 +80,15 @@ class OfflineManager {
       
       for (const sale of queuedSales) {
         try {
+          // Get CSRF token from meta tag
+          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                           document.querySelector('input[name="csrf_token"]')?.value || '';
+          
           const response = await fetch('/sales/new', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
               medicine_id: sale.medicine_id,
@@ -97,7 +102,8 @@ class OfflineManager {
             synced++;
             console.log(`✓ Synced sale ${synced}/${queuedSales.length}`);
           } else {
-            console.error(`Failed to sync sale: ${response.status}`);
+            const errorText = await response.text();
+            console.error(`Failed to sync sale: ${response.status} - ${errorText}`);
           }
         } catch (err) {
           console.error('Sync error:', err);
