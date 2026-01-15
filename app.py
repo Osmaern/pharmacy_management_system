@@ -211,22 +211,105 @@ def create_app():
     # Serve Service Worker from root for proper scope
     @app.route('/service-worker.js')
     def service_worker():
-        try:
-            sw_path = os.path.join(BASE_DIR, 'static', 'service-worker.js')
-            with open(sw_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            response = app.response_class(
-                response=content,
-                status=200,
-                mimetype='application/javascript'
-            )
-            response.cache_control.max_age = 0
-            response.cache_control.no_cache = True
-            response.cache_control.must_revalidate = True
-            return response
-        except Exception as e:
-            print(f"Error serving service-worker.js: {e}")
-            return "console.log('Service Worker failed to load: " + str(e) + "');", 200, {'Content-Type': 'application/javascript'}
+        # Inline Service Worker code to avoid file path issues
+        sw_code = """
+// Simple, reliable Service Worker for offline functionality
+const CACHE_NAME = 'pharmacy-v1';
+
+// Install
+self.addEventListener('install', (event) => {
+  console.log('[SW] Installing');
+  self.skipWaiting();
+});
+
+// Activate
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating');
+  event.waitUntil(
+    caches.keys().then((names) => {
+      return Promise.all(
+        names.map((name) => {
+          if (name !== CACHE_NAME) {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch - network first for HTML, cache first for assets
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // For HTML pages: network first
+  if (request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, clone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request)
+            .then((cached) => {
+              if (cached) return cached;
+              return caches.match('/static/offline.html')
+                .then((offline) => offline || new Response('Offline'));
+            });
+        })
+    );
+    return;
+  }
+
+  // For other requests: cache first, fallback to network
+  event.respondWith(
+    caches.match(request)
+      .then((cached) => {
+        if (cached) return cached;
+
+        return fetch(request)
+          .then((response) => {
+            if (response && response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, clone);
+              });
+            }
+            return response;
+          })
+          .catch(() => {
+            return new Response('Offline - Resource not available', {
+              status: 503,
+              statusText: 'Service Unavailable'
+            });
+          });
+      })
+  );
+});
+"""
+        response = app.response_class(
+            response=sw_code,
+            status=200,
+            mimetype='application/javascript'
+        )
+        response.cache_control.max_age = 0
+        response.cache_control.no_cache = True
+        response.cache_control.must_revalidate = True
+        return response
 
     # ---------- DASHBOARD ROUTE ----------
     @app.route('/dashboard')
