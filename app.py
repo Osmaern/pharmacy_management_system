@@ -213,10 +213,20 @@ def create_app():
     def service_worker():
         try:
             sw_path = os.path.join(BASE_DIR, 'static', 'service-worker.js')
-            return send_file(sw_path, mimetype='application/javascript', cache_timeout=0)
+            with open(sw_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            response = app.response_class(
+                response=content,
+                status=200,
+                mimetype='application/javascript'
+            )
+            response.cache_control.max_age = 0
+            response.cache_control.no_cache = True
+            response.cache_control.must_revalidate = True
+            return response
         except Exception as e:
             print(f"Error serving service-worker.js: {e}")
-            return f"Service Worker not found: {e}", 500
+            return "console.log('Service Worker failed to load: " + str(e) + "');", 200, {'Content-Type': 'application/javascript'}
 
     # ---------- DASHBOARD ROUTE ----------
     @app.route('/dashboard')
