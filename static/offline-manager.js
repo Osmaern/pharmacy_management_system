@@ -80,26 +80,31 @@ class OfflineManager {
       
       for (const sale of queuedSales) {
         try {
+          const payload = {
+            medicine_id: sale.medicine_id,
+            quantity: sale.quantity,
+            customer_id: sale.customer_id || null
+          };
+          console.log('offline-manager.js:82 [SYNC] Sending payload:', payload);
+          
           // Use /sales/sync endpoint which is CSRF exempt for offline sync
           const response = await fetch('/sales/sync', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              medicine_id: sale.medicine_id,
-              quantity: sale.quantity,
-              customer_id: sale.customer_id || null
-            })
+            body: JSON.stringify(payload)
           });
+          
+          const responseData = await response.json();
+          console.log(`offline-manager.js:96 [SYNC] Response (${response.status}):`, responseData);
           
           if (response.ok) {
             await offlineDB.markSaleSynced(sale.timestamp);
             synced++;
             console.log(`✓ Synced sale ${synced}/${queuedSales.length}`);
           } else {
-            const errorText = await response.text();
-            console.error(`Failed to sync sale: ${response.status} - ${errorText}`);
+            console.error(`Failed to sync sale: ${response.status} - ${responseData.error}`);
           }
         } catch (err) {
           console.error('Sync error:', err);

@@ -519,16 +519,40 @@ self.addEventListener('fetch', (event) => {
         """API endpoint for offline sync - bypasses CSRF for JSON requests"""
         try:
             data = request.get_json()
-            med_id = int(data.get('medicine_id'))
-            qty = int(data.get('quantity'))
+            print(f"[SYNC] Received data: {data}", flush=True)
+            
+            if not data:
+                print("[SYNC] No JSON data received", flush=True)
+                return jsonify({'error': 'No data provided'}), 400
+            
+            med_id = data.get('medicine_id')
+            qty = data.get('quantity')
             customer_id = data.get('customer_id')
-
-            med = Medicine.query.get_or_404(med_id)
+            
+            print(f"[SYNC] med_id={med_id}, qty={qty}, customer_id={customer_id}", flush=True)
+            
+            if not med_id or not qty:
+                print("[SYNC] Missing medicine_id or quantity", flush=True)
+                return jsonify({'error': 'Missing medicine_id or quantity'}), 400
+            
+            try:
+                med_id = int(med_id)
+                qty = int(qty)
+            except (ValueError, TypeError) as e:
+                print(f"[SYNC] Invalid type conversion: {e}", flush=True)
+                return jsonify({'error': f'Invalid medicine_id or quantity format: {str(e)}'}), 400
+            
+            med = Medicine.query.filter_by(id=med_id).first()
+            if not med:
+                print(f"[SYNC] Medicine not found: {med_id}", flush=True)
+                return jsonify({'error': f'Medicine {med_id} not found'}), 404
             
             if qty <= 0:
+                print(f"[SYNC] Invalid quantity: {qty}", flush=True)
                 return jsonify({'error': 'Quantity must be positive.'}), 400
             if med.quantity < qty:
-                return jsonify({'error': 'Not enough stock for that medicine.'}), 400
+                print(f"[SYNC] Insufficient stock. Need {qty}, have {med.quantity}", flush=True)
+                return jsonify({'error': f'Not enough stock. Available: {med.quantity}, Requested: {qty}'}), 400
 
             price_per_unit = med.price
             total_price = round(price_per_unit * qty, 2)
@@ -540,10 +564,13 @@ self.addEventListener('fetch', (event) => {
             db.session.add(sale)
             db.session.commit()
             
+            print(f"[SYNC] Sale recorded successfully: id={sale.id}, total={total_price}", flush=True)
             return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
-        except ValueError:
-            return jsonify({'error': 'Invalid medicine or quantity.'}), 400
+            
         except Exception as e:
+            print(f"[SYNC] Error: {str(e)}", flush=True)
+            import traceback
+            traceback.print_exc()
             db.session.rollback()
             return jsonify({'error': f'Error recording sale: {str(e)}'}), 500
 
