@@ -151,6 +151,31 @@
     <script src="{{ url_for('static', filename='offline-db.js') }}"></script>
     <script src="{{ url_for('static', filename='offline-manager.js') }}"></script>
     
+    <!-- Helper to ensure offlineDB is ready -->
+    <script>
+      window.waitForOfflineDB = async function(timeout = 5000) {
+        const start = Date.now();
+        while (Date.now() - start < timeout) {
+          if (window.offlineDB && window.offlineDB.available && window.offlineDB.db) {
+            console.log('✓ offlineDB is ready');
+            return window.offlineDB;
+          }
+          await new Promise(r => setTimeout(r, 100));
+        }
+        throw new Error('offlineDB initialization timeout');
+      };
+      
+      // Automatically wait for offlineDB on page load
+      document.addEventListener('DOMContentLoaded', async () => {
+        try {
+          await window.waitForOfflineDB();
+          console.log('✓ Page ready: offlineDB initialized');
+        } catch (err) {
+          console.warn('offlineDB may not be available:', err.message);
+        }
+      });
+    </script>
+    
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {

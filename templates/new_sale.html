@@ -78,58 +78,38 @@
         } else {
           console.log('Offline - attempting to save to IndexedDB');
           
-          // Offline - save to IndexedDB
-          if (!window.offlineDB) {
-            console.error('offlineDB not available');
-            alert('Offline storage not available. Please try again when online.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Record Sale';
-            return;
-          }
-
-          if (!window.offlineDB.available) {
-            console.error('IndexedDB not available');
-            alert('IndexedDB not available on this device.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Record Sale';
-            return;
-          }
-
-          // Wait for DB to be ready using ensureReady
+          // Offline - save to IndexedDB - use global helper to wait for offlineDB
           try {
-            await window.offlineDB.ensureReady();
+            const offlineDB = await window.waitForOfflineDB(5000);
+            
+            const sale = {
+              medicine_id: parseInt(medicineId),
+              quantity: parseInt(quantity),
+              customer_id: customerId ? parseInt(customerId) : null,
+              timestamp: Date.now()
+            };
+
+            console.log('new_sale.html:88 [OFFLINE] Queueing sale:', sale);
+            await offlineDB.queueSale(sale);
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+              ✓ Sale saved offline! It will sync when you're back online.
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.insertBefore(alertDiv, document.body.firstChild);
+
+            // Reset form
+            document.getElementById('sale-form').reset();
+            updateTotal();
+            
+            setTimeout(() => alertDiv.remove(), 3000);
           } catch (err) {
-            console.error('Database not ready:', err);
-            alert('Database initialization failed: ' + err.message);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Record Sale';
-            return;
+            console.error('new_sale.html:108 [OFFLINE] Error:', err);
+            alert('Error: ' + err.message);
           }
-
-          const sale = {
-            medicine_id: parseInt(medicineId),
-            quantity: parseInt(quantity),
-            customer_id: customerId ? parseInt(customerId) : null,
-            timestamp: Date.now()
-          };
-
-          console.log('Queueing sale:', sale);
-          await window.offlineDB.queueSale(sale);
-          
-          // Show success message
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'alert alert-success alert-dismissible fade show';
-          alertDiv.innerHTML = `
-            ✓ Sale saved offline! It will sync when you're back online.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          `;
-          document.body.insertBefore(alertDiv, document.body.firstChild);
-
-          // Reset form
-          document.getElementById('sale-form').reset();
-          updateTotal();
-          
-          setTimeout(() => alertDiv.remove(), 3000);
         }
       } catch (err) {
         console.error('Error saving sale:', err);
