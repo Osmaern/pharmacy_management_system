@@ -512,6 +512,41 @@ self.addEventListener('fetch', (event) => {
 
         return render_template('new_sale.html', medicines=medicines, customers=customers)
 
+    # Offline sync endpoint - CSRF exempt for JSON requests
+    @app.route('/sales/sync', methods=['POST'])
+    @csrf.exempt
+    def sync_sale():
+        """API endpoint for offline sync - bypasses CSRF for JSON requests"""
+        try:
+            data = request.get_json()
+            med_id = int(data.get('medicine_id'))
+            qty = int(data.get('quantity'))
+            customer_id = data.get('customer_id')
+
+            med = Medicine.query.get_or_404(med_id)
+            
+            if qty <= 0:
+                return jsonify({'error': 'Quantity must be positive.'}), 400
+            if med.quantity < qty:
+                return jsonify({'error': 'Not enough stock for that medicine.'}), 400
+
+            price_per_unit = med.price
+            total_price = round(price_per_unit * qty, 2)
+
+            # Reduce stock
+            med.quantity -= qty
+
+            sale = Sale(medicine=med, quantity=qty, price_per_unit=price_per_unit, total_price=total_price, customer_id=int(customer_id) if customer_id else None)
+            db.session.add(sale)
+            db.session.commit()
+            
+            return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
+        except ValueError:
+            return jsonify({'error': 'Invalid medicine or quantity.'}), 400
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Error recording sale: {str(e)}'}), 500
+
     @app.route('/sales/receipt/<int:sale_id>')
     def receipt(sale_id):
         sale = Sale.query.get_or_404(sale_id)

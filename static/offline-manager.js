@@ -80,15 +80,11 @@ class OfflineManager {
       
       for (const sale of queuedSales) {
         try {
-          // Get CSRF token from meta tag
-          const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
-                           document.querySelector('input[name="csrf_token"]')?.value || '';
-          
-          const response = await fetch('/sales/new', {
+          // Use /sales/sync endpoint which is CSRF exempt for offline sync
+          const response = await fetch('/sales/sync', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': csrfToken
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               medicine_id: sale.medicine_id,
