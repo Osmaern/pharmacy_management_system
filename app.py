@@ -7,7 +7,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from models import db, Medicine, Customer, Sale
-from sqlalchemy import func
+from sqlalchemy import func, text
 from io import BytesIO
 from flask import send_file
 
@@ -57,6 +57,23 @@ def create_app():
         except Exception as e:
             print(f"Warning: Could not create database tables: {e}")
             # Continue anyway - tables might already exist
+        # Ensure `cost_price` column exists for backward compatibility
+        try:
+            with db.engine.connect() as conn:
+                dialect = conn.dialect.name
+                if dialect == 'sqlite':
+                    res = conn.execute(text("PRAGMA table_info('medicine')")).fetchall()
+                    cols = [r[1] for r in res]
+                    if 'cost_price' not in cols:
+                        conn.execute(text("ALTER TABLE medicine ADD COLUMN cost_price FLOAT DEFAULT 0"))
+                        print('Added cost_price column to medicine (sqlite)')
+                elif dialect in ('postgres', 'postgresql'):
+                    # Postgres supports IF NOT EXISTS
+                    conn.execute(text("ALTER TABLE medicine ADD COLUMN IF NOT EXISTS cost_price DOUBLE PRECISION DEFAULT 0"))
+                    print('Ensured cost_price column exists in medicine (postgres)')
+        except Exception as e:
+            # Non-fatal: log and continue
+            print(f"Warning: could not ensure cost_price column exists: {e}")
 
     # Add context processor to inject current date and time in 12-hour format
     @app.context_processor
