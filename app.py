@@ -661,8 +661,8 @@ self.addEventListener('fetch', (event) => {
         all_sales = Sale.query.all()
         total_revenue = sum(s.total_price for s in all_sales)
         
-        # Calculate total cost using actual cost price from medicine
-        total_cost = sum(sale.medicine.cost_price * sale.quantity for sale in all_sales)
+        # Calculate total cost using actual cost price from medicine (with fallback to 0)
+        total_cost = sum((getattr(sale.medicine, 'cost_price', None) or 0) * sale.quantity for sale in all_sales)
         
         total_profit = total_revenue - total_cost
         profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
@@ -674,7 +674,7 @@ self.addEventListener('fetch', (event) => {
         medicines = Medicine.query.order_by(Medicine.name).all()
         
         # Calculate total stock cost (cost_price * quantity for all medicines in stock)
-        total_stock_cost = sum(m.cost_price * m.quantity for m in medicines)
+        total_stock_cost = sum((getattr(m, 'cost_price', None) or 0) * m.quantity for m in medicines)
 
         return render_template('reports.html',
                              daily_sales=daily_sales,

@@ -31,12 +31,16 @@ class Medicine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     brand = db.Column(db.String(120))
-    cost_price = db.Column(db.Float, nullable=False, default=0)
+    cost_price = db.Column(db.Float, nullable=True, default=0)
     price = db.Column(db.Float, nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0)
     expiry_date = db.Column(db.Date, nullable=True)
     category = db.Column(db.String(80))
     description = db.Column(db.Text)
+    
+    def get_cost_price(self):
+        """Get cost price with fallback to 0 if column doesn't exist"""
+        return getattr(self, 'cost_price', None) or 0
 
     def is_expired(self, today=None):
         from datetime import date
