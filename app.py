@@ -208,6 +208,12 @@ def create_app():
     def index():
         return render_template('index.html')
 
+    # Health check endpoint for offline app
+    @app.route('/health', methods=['GET'])
+    def health():
+        """Health check endpoint - returns 200 if server is up"""
+        return jsonify({'status': 'ok', 'timestamp': datetime.now().isoformat()}), 200
+
     # Serve Service Worker from root for proper scope
     @app.route('/service-worker.js')
     def service_worker():
@@ -388,6 +394,7 @@ self.addEventListener('fetch', (event) => {
             try:
                 name = request.form['name']
                 brand = request.form.get('brand')
+                cost_price = float(request.form['cost_price'])
                 price = float(request.form['price'])
                 quantity = int(request.form['quantity'])
                 expiry = request.form.get('expiry_date') or None
@@ -395,7 +402,7 @@ self.addEventListener('fetch', (event) => {
                 category = request.form.get('category')
                 description = request.form.get('description') or None
 
-                med = Medicine(name=name, brand=brand, price=price, quantity=quantity, expiry_date=expiry_date, category=category, description=description)
+                med = Medicine(name=name, brand=brand, cost_price=cost_price, price=price, quantity=quantity, expiry_date=expiry_date, category=category, description=description)
                 db.session.add(med)
                 db.session.commit()
                 flash('Medicine added successfully.', 'success')
@@ -420,6 +427,7 @@ self.addEventListener('fetch', (event) => {
                 med.name = request.form.get('name') or med.name
                 med.brand = request.form.get('brand') or med.brand
                 med.category = request.form.get('category') or med.category
+                med.cost_price = float(request.form.get('cost_price') or med.cost_price)
                 med.price = float(request.form.get('price') or med.price)
                 med.quantity = int(request.form.get('quantity') or med.quantity)
                 expiry = request.form.get('expiry_date') or None
@@ -492,7 +500,7 @@ self.addEventListener('fetch', (event) => {
                 db.session.commit()
                 
                 if is_json:
-                    return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
+                  return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
                 
                 flash('Sale recorded.', 'success')
                 return redirect(url_for('receipt', sale_id=sale.id))
@@ -517,42 +525,39 @@ self.addEventListener('fetch', (event) => {
     @csrf.exempt
     def sync_sale():
         """API endpoint for offline sync - bypasses CSRF for JSON requests"""
+        start_time = datetime.now()
+        timeout = 8  # 8 second timeout
+        
         try:
             data = request.get_json()
-            print(f"[SYNC] Received data: {data}", flush=True)
-            
             if not data:
-                print("[SYNC] No JSON data received", flush=True)
                 return jsonify({'error': 'No data provided'}), 400
             
             med_id = data.get('medicine_id')
             qty = data.get('quantity')
             customer_id = data.get('customer_id')
             
-            print(f"[SYNC] med_id={med_id}, qty={qty}, customer_id={customer_id}", flush=True)
-            
             if not med_id or not qty:
-                print("[SYNC] Missing medicine_id or quantity", flush=True)
                 return jsonify({'error': 'Missing medicine_id or quantity'}), 400
             
             try:
                 med_id = int(med_id)
                 qty = int(qty)
             except (ValueError, TypeError) as e:
-                print(f"[SYNC] Invalid type conversion: {e}", flush=True)
-                return jsonify({'error': f'Invalid medicine_id or quantity format: {str(e)}'}), 400
+                return jsonify({'error': f'Invalid format: {str(e)}'}), 400
+            
+            # Check timeout
+            if (datetime.now() - start_time).total_seconds() > timeout:
+                return jsonify({'error': 'Request timeout'}), 504
             
             med = Medicine.query.filter_by(id=med_id).first()
             if not med:
-                print(f"[SYNC] Medicine not found: {med_id}", flush=True)
-                return jsonify({'error': f'Medicine {med_id} not found'}), 404
+                return jsonify({'error': f'Medicine not found'}), 404
             
             if qty <= 0:
-                print(f"[SYNC] Invalid quantity: {qty}", flush=True)
-                return jsonify({'error': 'Quantity must be positive.'}), 400
+                return jsonify({'error': 'Quantity must be positive'}), 400
             if med.quantity < qty:
-                print(f"[SYNC] Insufficient stock. Need {qty}, have {med.quantity}", flush=True)
-                return jsonify({'error': f'Not enough stock. Available: {med.quantity}, Requested: {qty}'}), 400
+                return jsonify({'error': f'Insufficient stock. Available: {med.quantity}, Requested: {qty}'}), 400
 
             price_per_unit = med.price
             total_price = round(price_per_unit * qty, 2)
@@ -564,15 +569,11 @@ self.addEventListener('fetch', (event) => {
             db.session.add(sale)
             db.session.commit()
             
-            print(f"[SYNC] Sale recorded successfully: id={sale.id}, total={total_price}", flush=True)
             return jsonify({'success': True, 'sale_id': sale.id, 'total': total_price}), 201
             
         except Exception as e:
-            print(f"[SYNC] Error: {str(e)}", flush=True)
-            import traceback
-            traceback.print_exc()
             db.session.rollback()
-            return jsonify({'error': f'Error recording sale: {str(e)}'}), 500
+            return jsonify({'error': f'Server error: {str(e)}'}), 500
 
     @app.route('/sales/receipt/<int:sale_id>')
     def receipt(sale_id):
@@ -660,12 +661,8 @@ self.addEventListener('fetch', (event) => {
         all_sales = Sale.query.all()
         total_revenue = sum(s.total_price for s in all_sales)
         
-        # Calculate total cost (price * quantity for all sales)
-        total_cost = 0
-        for sale in all_sales:
-            # Assuming cost is calculated from medicine base price
-            # For a real system, you'd store cost separately
-            total_cost += (sale.medicine.price * sale.quantity) * 0.6  # Assuming 40% markup (60% cost)
+        # Calculate total cost using actual cost price from medicine
+        total_cost = sum(sale.medicine.cost_price * sale.quantity for sale in all_sales)
         
         total_profit = total_revenue - total_cost
         profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
@@ -675,6 +672,9 @@ self.addEventListener('fetch', (event) => {
 
         # Stock report
         medicines = Medicine.query.order_by(Medicine.name).all()
+        
+        # Calculate total stock cost (cost_price * quantity for all medicines in stock)
+        total_stock_cost = sum(m.cost_price * m.quantity for m in medicines)
 
         return render_template('reports.html',
                              daily_sales=daily_sales,
@@ -692,6 +692,7 @@ self.addEventListener('fetch', (event) => {
                              total_cost=total_cost,
                              total_profit=total_profit,
                              profit_margin=profit_margin,
+                             total_stock_cost=total_stock_cost,
                              today=today)
 
     @app.route('/sales/search')
@@ -820,32 +821,36 @@ self.addEventListener('fetch', (event) => {
     @app.route('/reports/reset/confirm', methods=['POST'])
     @admin_required
     def reset_confirm():
-        period = request.form.get('period')
-        if not period:
-            flash('Please select a reset period.', 'danger')
+        try:
+            period = request.form.get('period')
+            if not period:
+                flash('Please select a reset period.', 'danger')
+                return redirect(url_for('reports'))
+
+            now = datetime.now()
+            if period == 'daily':
+                cutoff = now - timedelta(hours=24)
+            elif period == 'weekly':
+                cutoff = now - timedelta(days=7)
+            elif period == 'monthly':
+                cutoff = now - timedelta(days=30)
+            elif period == 'half_yearly':
+                cutoff = now - timedelta(days=180)
+            elif period == 'yearly':
+                cutoff = now - timedelta(days=365)
+            else:
+                flash('Invalid period selected.', 'danger')
+                return redirect(url_for('reports'))
+
+            # Calculate what will be deleted
+            sales_to_delete = Sale.query.filter(Sale.timestamp < cutoff).all()
+            sales_count = len(sales_to_delete)
+            total_value = sum(s.total_price for s in sales_to_delete)
+
+            return render_template('reset_confirm.html', period=period, sales_count=sales_count, total_value=total_value, cutoff_date=cutoff.strftime('%Y-%m-%d %H:%M:%S'))
+        except Exception as e:
+            flash(f'Error preparing reset: {str(e)}', 'danger')
             return redirect(url_for('reports'))
-
-        now = datetime.now()
-        if period == 'daily':
-            cutoff = now - timedelta(hours=24)
-        elif period == 'weekly':
-            cutoff = now - timedelta(days=7)
-        elif period == 'monthly':
-            cutoff = now - timedelta(days=30)
-        elif period == 'half_yearly':
-            cutoff = now - timedelta(days=180)
-        elif period == 'yearly':
-            cutoff = now - timedelta(days=365)
-        else:
-            flash('Invalid period selected.', 'danger')
-            return redirect(url_for('reports'))
-
-        # Calculate what will be deleted
-        sales_to_delete = Sale.query.filter(Sale.timestamp < cutoff).all()
-        sales_count = len(sales_to_delete)
-        total_value = sum(s.total_price for s in sales_to_delete)
-
-        return render_template('reset_confirm.html', period=period, sales_count=sales_count, total_value=total_value, cutoff_date=cutoff.strftime('%Y-%m-%d %H:%M:%S'))
 
     @app.route('/reports/reset', methods=['POST'])
     @admin_required
@@ -870,12 +875,17 @@ self.addEventListener('fetch', (event) => {
             flash('Invalid period selected.', 'danger')
             return redirect(url_for('reports'))
 
-        # Delete sales older than cutoff
-        deleted_count = Sale.query.filter(Sale.timestamp < cutoff).delete()
-        db.session.commit()
+        try:
+            # Delete sales older than cutoff
+            deleted_count = Sale.query.filter(Sale.timestamp < cutoff).delete()
+            db.session.commit()
 
-        flash(f'Sales reset successfully. Deleted {deleted_count} old sales records.', 'success')
-        return redirect(url_for('reports'))
+            flash(f'Sales reset successfully. Deleted {deleted_count} old sales records.', 'success')
+            return redirect(url_for('reports'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error resetting sales: {str(e)}', 'danger')
+            return redirect(url_for('reports'))
 
     return app
 

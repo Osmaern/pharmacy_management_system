@@ -31,6 +31,7 @@ class Medicine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     brand = db.Column(db.String(120))
+    cost_price = db.Column(db.Float, nullable=False, default=0)
     price = db.Column(db.Float, nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=0)
     expiry_date = db.Column(db.Date, nullable=True)

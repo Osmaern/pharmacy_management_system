@@ -326,8 +326,12 @@
                 <td class="text-end"><strong>₵{{ "%.2f"|format(total_revenue) }}</strong></td>
               </tr>
               <tr class="cost-row">
-                <td><strong>Total Cost of Goods</strong></td>
+                <td><strong>Total Cost of Goods Sold</strong></td>
                 <td class="text-end"><strong>₵{{ "%.2f"|format(total_cost) }}</strong></td>
+              </tr>
+              <tr class="cost-row">
+                <td><strong>Total Stock Cost (Current Inventory)</strong></td>
+                <td class="text-end"><strong>₵{{ "%.2f"|format(total_stock_cost) }}</strong></td>
               </tr>
               <tr class="separator">
                 <td colspan="2"></td>
@@ -382,7 +386,9 @@
                 <th>Medicine</th>
                 <th>Brand</th>
                 <th>Quantity</th>
-                <th>Unit Price</th>
+                <th>Cost Price</th>
+                <th>Selling Price</th>
+                <th>Stock Cost</th>
                 <th>Stock Value</th>
                 <th>Expiry Date</th>
                 <th>Status</th>
@@ -399,7 +405,9 @@
                         {{ med.quantity }}
                       </span>
                     </td>
+                    <td>₵{{ "%.2f"|format(med.cost_price) }}</td>
                     <td>₵{{ "%.2f"|format(med.price) }}</td>
+                    <td><strong>₵{{ "%.2f"|format(med.cost_price * med.quantity) }}</strong></td>
                     <td><strong>₵{{ "%.2f"|format(med.price * med.quantity) }}</strong></td>
                     <td>
                       {% if med.expiry_date %}
@@ -425,7 +433,7 @@
                 {% endfor %}
               {% else %}
                 <tr>
-                  <td colspan="7" class="text-center text-muted">No medicines in inventory</td>
+                  <td colspan="9" class="text-center text-muted">No medicines in inventory</td>
                 </tr>
               {% endif %}
             </tbody>
